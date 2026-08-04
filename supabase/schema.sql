@@ -303,3 +303,9 @@ left join lateral (
 alter table telegram_message_map enable row level security;
 create policy "telegram_map: admin only" on telegram_message_map
   for all using (is_admin()) with check (is_admin());
+
+-- ============================================================================
+-- REALTIME: без цього повідомлення в чаті зберігаються, але екран
+-- про них не дізнається без перезавантаження сторінки.
+-- ============================================================================
+alter publication supabase_realtime add table chat_messages;

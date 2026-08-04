@@ -18,6 +18,7 @@ export default function ChatPanel({ courseId, studentId, lessons, viewerRole }) 
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState('');
   const [unread, setUnread] = useState({});
+  const [sendError, setSendError] = useState('');
 
   const refreshUnread = useCallback(async () => {
     const counts = await fetchUnreadCounts(courseId, viewerRole, studentId);
@@ -34,7 +35,7 @@ export default function ChatPanel({ courseId, studentId, lessons, viewerRole }) 
       await markThreadRead(id, viewerRole);
       refreshUnread();
       unsubscribe = subscribeToThreadMessages(id, (msg) => {
-        setMessages((prev) => [...prev, msg]);
+        setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
         // якщо повідомлення від іншої сторони і тред зараз відкритий -
         // одразу позначаємо прочитаним
         if (msg.sender_role !== viewerRole) {
@@ -49,18 +50,42 @@ export default function ChatPanel({ courseId, studentId, lessons, viewerRole }) 
 
   async function handleSend() {
     if (!draft.trim() || !threadId) return;
-    await sendMessage({ threadId, senderRole: viewerRole, body: draft.trim() });
+    const text = draft.trim();
     setDraft('');
+    setSendError('');
+    try {
+      const id = await sendMessage({ threadId, senderRole: viewerRole, body: text });
+      // Показуємо повідомлення одразу, не чекаючи realtime-підписки —
+      // так воно з'являється миттєво навіть якщо realtime десь забарився.
+      setMessages((prev) =>
+        prev.some((m) => m.id === id) ? prev : [...prev, { id, sender_role: viewerRole, body: text, attachment_url: null, created_at: new Date().toISOString() }]
+      );
+    } catch (err) {
+      console.error('send message failed', err);
+      setSendError('Не вдалося надіслати. Перевірте інтернет і спробуйте ще раз.');
+      setDraft(text);
+    }
   }
 
   async function handleAttach(e) {
     const file = e.target.files[0];
     if (!file || !threadId) return;
-    const path = `${threadId}/${Date.now()}-${file.name}`;
-    const { error } = await supabase.storage.from('chat-attachments').upload(path, file);
-    if (error) return;
-    const { data: pub } = supabase.storage.from('chat-attachments').getPublicUrl(path);
-    await sendMessage({ threadId, senderRole: viewerRole, body: '', attachmentUrl: pub.publicUrl });
+    setSendError('');
+    try {
+      const path = `${threadId}/${Date.now()}-${file.name}`;
+      const { error: uploadError } = await supabase.storage.from('chat-attachments').upload(path, file);
+      if (uploadError) throw uploadError;
+      const { data: pub } = supabase.storage.from('chat-attachments').getPublicUrl(path);
+      const id = await sendMessage({ threadId, senderRole: viewerRole, body: '', attachmentUrl: pub.publicUrl });
+      setMessages((prev) =>
+        prev.some((m) => m.id === id)
+          ? prev
+          : [...prev, { id, sender_role: viewerRole, body: '', attachment_url: pub.publicUrl, created_at: new Date().toISOString() }]
+      );
+    } catch (err) {
+      console.error('attach failed', err);
+      setSendError('Не вдалося надіслати файл. Спробуйте ще раз.');
+    }
   }
 
   return (
@@ -126,6 +151,7 @@ export default function ChatPanel({ courseId, studentId, lessons, viewerRole }) 
           Надіслати
         </button>
       </div>
+      {sendError && <p style={{ fontSize: 12, color: 'crimson', padding: '0 8px 8px' }}>{sendError}</p>}
     </div>
   );
 }
