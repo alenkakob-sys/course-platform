@@ -30,9 +30,15 @@ export default function Login() {
       </p>
 
       {status === 'sent' ? (
-        <p style={{ fontSize: 14 }}>
-          Лист надіслано на <b>{email}</b>. Перейдіть за посиланням у листі, щоб увійти.
-        </p>
+        <div style={{ fontSize: 14 }}>
+          <p>
+            Лист надіслано на <b>{email}</b>. Перейдіть за посиланням у листі, щоб увійти.
+          </p>
+          <p style={{ fontSize: 12, color: '#888', marginTop: 8 }}>
+            Якщо не бачите лист протягом кількох хвилин — перевірте теку &quot;Спам&quot;:
+            лист приходить від нашого поштового сервісу, а не з особистої пошти.
+          </p>
+        </div>
       ) : (
         <form onSubmit={handleSubmit}>
           <input

@@ -20,11 +20,11 @@ create table profiles (
 create function handle_new_user()
 returns trigger as $$
 begin
-  insert into profiles (id, email)
+  insert into public.profiles (id, email)
   values (new.id, new.email);
   return new;
 end;
-$$ language plpgsql security definer;
+$$ language plpgsql security definer set search_path = public;
 
 create trigger on_auth_user_created
   after insert on auth.users
@@ -34,9 +34,9 @@ create trigger on_auth_user_created
 create function is_admin()
 returns boolean as $$
   select exists (
-    select 1 from profiles where id = auth.uid() and role = 'admin'
+    select 1 from public.profiles where id = auth.uid() and role = 'admin'
   );
-$$ language sql security definer stable;
+$$ language sql security definer stable set search_path = public;
 
 -- ---------------------------------------------------------------------------
 -- 2. КУРСИ ТА УРОКИ (структуру повністю задає адмінка, нічого не зашито)
