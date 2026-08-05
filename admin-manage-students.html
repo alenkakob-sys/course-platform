@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Учениці</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="page">
+  <div class="row-between" style="margin-bottom:16px;">
+    <h1 class="h1" style="margin:0;">Учениці</h1>
+    <a href="admin-manage.html" class="link">← курси</a>
+  </div>
+
+  <form id="invite-form" style="display:flex;gap:6px;margin-bottom:8px;">
+    <input type="email" id="invite-email" required placeholder="email нової учениці" style="flex:1;" />
+    <button type="submit" class="btn">Запросити</button>
+  </form>
+  <p id="invite-status" style="display:none;margin-top:-4px;margin-bottom:16px;"></p>
+
+  <div id="students-list"></div>
+</div>
+<script type="module" src="js/pages/admin-manage-students.js"></script>
+</body>
+</html>

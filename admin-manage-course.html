@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Редагування курсу</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="page">
+  <a href="admin-manage.html" class="link" style="display:block;margin-bottom:16px;">← усі курси</a>
+
+  <label class="field-label">Назва курсу</label>
+  <input type="text" id="course-title" style="font-size:16px;font-weight:500;margin-bottom:16px;" />
+
+  <label class="field-label">Презентація курсу (посилання для вбудовування Google Slides, необов'язково)</label>
+  <input type="text" id="presentation-url" placeholder="https://docs.google.com/presentation/d/.../embed" style="margin-bottom:24px;" />
+
+  <h2 style="font-size:14px;font-weight:500;margin-bottom:8px;">Уроки</h2>
+  <div id="lessons-list"></div>
+  <button id="add-lesson" class="btn btn-dashed" style="margin-top:8px;">+ Новий урок</button>
+</div>
+<script type="module" src="js/pages/admin-manage-course.js"></script>
+</body>
+</html>

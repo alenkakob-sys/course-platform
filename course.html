@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Курс</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="page">
+  <div class="topbar">
+    <a class="icon-btn" href="#" id="back-link">←</a>
+    <div style="flex:1;min-width:0;">
+      <p class="title" id="course-title"></p>
+      <p class="subtitle" id="student-context" style="display:none;"></p>
+    </div>
+  </div>
+
+  <div id="presentation-block" style="display:none;margin-bottom:12px;">
+    <a id="presentation-link" target="_blank" rel="noreferrer" style="display:block;padding:10px 12px;background:var(--surface-2);border-radius:8px;font-size:13px;text-decoration:none;">Презентація курсу →</a>
+  </div>
+
+  <div class="lesson-strip" id="lesson-strip"></div>
+
+  <div id="video-block">
+    <div class="video-box" id="video-box"></div>
+    <p class="muted" style="font-size:11px;margin:6px 0 16px;">Розгортається на весь екран при повороті екрана</p>
+
+    <details class="accordion">
+      <summary>Опис уроку</summary>
+      <div class="body" id="lesson-description"></div>
+    </details>
+
+    <details class="accordion">
+      <summary>Домашнє завдання</summary>
+      <div class="body" id="homework-container"></div>
+    </details>
+
+    <details class="accordion" open>
+      <summary>Чат <span class="muted" style="font-weight:400;">· незалежний</span></summary>
+      <div class="body" id="chat-container"></div>
+    </details>
+  </div>
+</div>
+
+<script type="module" src="js/pages/course.js"></script>
+</body>
+</html>
