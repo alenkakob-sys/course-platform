@@ -4,6 +4,7 @@ import { useProfile } from '@/lib/useProfile';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchUnreadCounts } from '@/lib/chat';
 import CourseCard from '@/components/CourseCard';
+import LogoutButton from '@/components/LogoutButton';
 
 export default function CoursesList() {
   const router = useRouter();
@@ -36,7 +37,10 @@ export default function CoursesList() {
 
   return (
     <div style={{ maxWidth: 420, margin: '0 auto', padding: 16 }}>
-      <h1 style={{ fontSize: 18, fontWeight: 500, marginBottom: 16 }}>Мої курси</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <h1 style={{ fontSize: 18, fontWeight: 500 }}>Мої курси</h1>
+        <LogoutButton />
+      </div>
       {courses.length === 0 && (
         <p style={{ fontSize: 14, color: '#666' }}>Поки що немає доступних курсів.</p>
       )}

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useProfile } from '@/lib/useProfile';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchUnreadCounts } from '@/lib/chat';
+import LogoutButton from '@/components/LogoutButton';
 
 export default function AdminHome() {
   const router = useRouter();
@@ -44,7 +45,10 @@ export default function AdminHome() {
 
   return (
     <div style={{ maxWidth: 480, margin: '0 auto', padding: 16 }}>
-      <h1 style={{ fontSize: 18, fontWeight: 500, marginBottom: 16 }}>Учениці</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+        <h1 style={{ fontSize: 18, fontWeight: 500 }}>Учениці</h1>
+        <LogoutButton />
+      </div>
       <Link href="/admin/manage" style={{ display: 'block', fontSize: 13, marginBottom: 16, color: '#111' }}>
         Керувати курсами й уроками →
       </Link>
