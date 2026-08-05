@@ -127,6 +127,20 @@ export default function ManageCourse() {
   );
 }
 
+// Приймає будь-що: голий ID, youtu.be/ID, youtube.com/watch?v=ID,
+// youtube.com/embed/ID, youtube.com/shorts/ID — і повертає лише сам ID.
+function extractYoutubeId(input) {
+  const value = input.trim();
+  const patterns = [
+    /(?:youtu\.be\/|youtube\.com\/(?:embed\/|shorts\/|watch\?v=))([\w-]{11})/,
+  ];
+  for (const re of patterns) {
+    const match = value.match(re);
+    if (match) return match[1];
+  }
+  return value; // вже схоже на голий ID — повертаємо як є
+}
+
 function LessonCard({ lesson, isFirst, isLast, onMoveUp, onMoveDown, onDelete, onChanged }) {
   const [newVideoId, setNewVideoId] = useState('');
 
@@ -139,7 +153,7 @@ function LessonCard({ lesson, isFirst, isLast, onMoveUp, onMoveDown, onDelete, o
     if (!newVideoId.trim()) return;
     await supabase.from('videos').insert({
       lesson_id: lesson.id,
-      youtube_id: newVideoId.trim(),
+      youtube_id: extractYoutubeId(newVideoId),
       order_index: lesson.videos?.length || 0,
     });
     setNewVideoId('');
