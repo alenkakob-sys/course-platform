@@ -4,7 +4,7 @@ import { SITE_URL } from '../config.js';
 document.getElementById('google-btn').addEventListener('click', async () => {
   await supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: `${SITE_URL}/courses.html` },
+    options: { redirectTo: `${SITE_URL}/index.html` },
   });
 });
 
@@ -16,7 +16,7 @@ document.getElementById('email-form').addEventListener('submit', async (e) => {
 
   const { error } = await supabase.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: `${SITE_URL}/courses.html` },
+    options: { emailRedirectTo: `${SITE_URL}/index.html` },
   });
 
   if (error) {
