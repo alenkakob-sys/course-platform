@@ -11,10 +11,16 @@ wireLogoutButton(document.getElementById('logout-btn'));
 
 const elements = {
   courseTitle: document.getElementById('course-title'),
-  breadcrumb: document.getElementById('course-breadcrumb'),
   saveStatus: document.getElementById('save-status'),
   preview: document.getElementById('preview-course'),
-  done: document.querySelector('.admin-header-actions .admin-primary'),
+  done: document.getElementById('finish-editing'),
+  shell: document.getElementById('admin-shell'),
+  toggleSidebar: document.getElementById('toggle-sidebar'),
+  singleMode: document.getElementById('single-mode'),
+  tableMode: document.getElementById('table-mode'),
+  singleView: document.getElementById('single-view'),
+  tableView: document.getElementById('table-view'),
+  comparisonBody: document.getElementById('comparison-body'),
   lessonSearch: document.getElementById('lesson-search'),
   lessonsList: document.getElementById('lessons-list'),
   lessonsCount: document.getElementById('lessons-count'),
@@ -35,6 +41,8 @@ const elements = {
   homeworkType: document.getElementById('homework-type'),
   homeworkDescription: document.getElementById('homework-description'),
   error: document.getElementById('editor-error'),
+  presentationFile: document.getElementById('course-presentation-file'),
+  presentationNote: document.getElementById('presentation-note'),
 };
 
 let course = null;
@@ -42,6 +50,8 @@ let lessons = [];
 let selectedLessonId = params.get('lesson');
 let draggedLessonId = null;
 let savingCounter = 0;
+let editorMode = 'single';
+let sidebarManuallyCollapsed = localStorage.getItem('admin-sidebar-collapsed') === '1';
 const pendingSaves = new Map();
 
 async function load({ keepSelection = true } = {}) {
@@ -72,7 +82,6 @@ async function load({ keepSelection = true } = {}) {
   if (!keepSelection || !lessons.some((lesson) => lesson.id === selectedLessonId)) selectedLessonId = lessons[0]?.id || null;
 
   elements.courseTitle.value = course.title;
-  elements.breadcrumb.textContent = course.title;
   elements.presentationUrl.value = course.presentationUrl;
   if (previewAccess?.student_id) {
     elements.preview.href = `course.html?course=${courseId}&student=${previewAccess.student_id}&admin=1`;
@@ -82,6 +91,8 @@ async function load({ keepSelection = true } = {}) {
 
   renderLessonList();
   renderEditor();
+  renderComparison();
+  applySidebarState();
   setSaveStatus('Збережено');
 }
 
@@ -140,7 +151,7 @@ function renderEditor() {
   elements.lessonShortLabel.value = lesson.short_label || '';
   elements.lessonDescription.value = lesson.description || '';
 
-  elements.lessonParent.innerHTML = '<option value="">Немає — основний рівень</option>';
+  elements.lessonParent.innerHTML = '<option value="">Головний рівень</option>';
   for (const candidate of lessons.filter((item) => item.id !== lesson.id && item.parent_lesson_id !== lesson.id)) {
     const option = document.createElement('option');
     option.value = candidate.id;
@@ -154,6 +165,107 @@ function renderEditor() {
   elements.homeworkSettings.hidden = !lesson.homework_type;
   elements.homeworkType.value = lesson.homework_type || 'text';
   elements.homeworkDescription.value = lesson.homework_description || '';
+}
+
+function renderComparison() {
+  elements.comparisonBody.innerHTML = '';
+  if (!lessons.length) {
+    elements.comparisonBody.innerHTML = '<tr><td colspan="4">Додайте перший урок.</td></tr>';
+    return;
+  }
+
+  for (const lesson of lessons) {
+    const row = document.createElement('tr');
+    row.dataset.lessonId = lesson.id;
+    row.innerHTML = `
+      <th scope="row" class="admin-table-lesson">
+        <strong>${escapeHtml(lesson.short_label || '—')}</strong>
+        <span>${escapeHtml(lesson.title)}</span>
+      </th>
+      <td data-table-column="main">
+        <div class="admin-table-main-grid">
+          <label>Мітка<input data-table-field="short_label" value="${escapeAttribute(lesson.short_label || '')}" /></label>
+          <label>Назва<input data-table-field="title" value="${escapeAttribute(lesson.title)}" /></label>
+        </div>
+        <label>Структура<select data-table-field="parent_lesson_id"></select></label>
+        <label>Опис<textarea data-table-field="description" rows="2">${escapeHtml(lesson.description || '')}</textarea></label>
+      </td>
+      <td data-table-column="materials">
+        <div class="admin-table-videos"></div>
+        <div class="admin-table-add-video"><input data-table-new-video placeholder="YouTube-посилання" /><button type="button">＋</button></div>
+        <div class="admin-table-presentation">▧ Презентація уроку: не додана</div>
+      </td>
+      <td data-table-column="homework-access">
+        <div data-table-subsection="homework" class="admin-table-subsection">
+          <label class="admin-table-check"><input data-table-homework-enabled type="checkbox" ${lesson.homework_type ? 'checked' : ''} /> Є ДЗ</label>
+          <select data-table-field="homework_type" ${lesson.homework_type ? '' : 'disabled'}>
+            <option value="text">Текст</option><option value="photo">Фото</option><option value="video">Відео</option>
+          </select>
+          <textarea data-table-field="homework_description" rows="2" placeholder="Текст завдання" ${lesson.homework_type ? '' : 'disabled'}>${escapeHtml(lesson.homework_description || '')}</textarea>
+        </div>
+        <div data-table-subsection="access" class="admin-table-subsection">
+          <label>Доступ<select disabled><option>Вільний доступ</option><option>Після здачі ДЗ</option><option>Після перевірки</option></select></label>
+        </div>
+      </td>
+    `;
+
+    const parentSelect = row.querySelector('[data-table-field="parent_lesson_id"]');
+    parentSelect.innerHTML = '<option value="">Головний рівень</option>';
+    for (const candidate of lessons.filter((item) => item.id !== lesson.id && item.parent_lesson_id !== lesson.id)) {
+      const option = document.createElement('option');
+      option.value = candidate.id;
+      option.textContent = `${candidate.short_label ? `${candidate.short_label} · ` : ''}${candidate.title}`;
+      parentSelect.appendChild(option);
+    }
+    parentSelect.value = lesson.parent_lesson_id || '';
+
+    const homeworkType = row.querySelector('[data-table-field="homework_type"]');
+    homeworkType.value = lesson.homework_type || 'text';
+
+    const videosWrap = row.querySelector('.admin-table-videos');
+    if (!lesson.videos.length) videosWrap.innerHTML = '<span class="admin-table-empty">Без відео</span>';
+    lesson.videos.forEach((video, index) => {
+      const chip = document.createElement('span');
+      chip.className = 'admin-video-chip';
+      chip.textContent = `▶ ${video.title || `Відео ${index + 1}`}`;
+      chip.title = video.youtube_id;
+      videosWrap.appendChild(chip);
+    });
+
+    row.querySelectorAll('[data-table-field]').forEach((fieldEl) => {
+      const field = fieldEl.dataset.tableField;
+      const eventName = fieldEl.tagName === 'TEXTAREA' || fieldEl.tagName === 'INPUT' ? 'input' : 'change';
+      fieldEl.addEventListener(eventName, () => {
+        const value = field === 'parent_lesson_id' ? (fieldEl.value || null) : fieldEl.value;
+        lesson[field] = value;
+        if (field === 'title' || field === 'short_label') {
+          row.querySelector('.admin-table-lesson strong').textContent = lesson.short_label || '—';
+          row.querySelector('.admin-table-lesson span').textContent = lesson.title || 'Без назви';
+          renderLessonList();
+        }
+        scheduleSave(`lesson-${lesson.id}-${field}`, () => supabase.from('lessons').update({ [field]: value }).eq('id', lesson.id));
+      });
+    });
+
+    const homeworkToggle = row.querySelector('[data-table-homework-enabled]');
+    homeworkToggle.addEventListener('change', () => {
+      lesson.homework_type = homeworkToggle.checked ? (homeworkType.value || 'text') : null;
+      homeworkType.disabled = !homeworkToggle.checked;
+      row.querySelector('[data-table-field="homework_description"]').disabled = !homeworkToggle.checked;
+      renderLessonList();
+      runSave(() => supabase.from('lessons').update({ homework_type: lesson.homework_type }).eq('id', lesson.id));
+    });
+
+    const addVideoButton = row.querySelector('.admin-table-add-video button');
+    const addVideoInput = row.querySelector('[data-table-new-video]');
+    addVideoButton.addEventListener('click', () => addVideoToLesson(lesson, addVideoInput));
+    addVideoInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') { event.preventDefault(); addVideoToLesson(lesson, addVideoInput); }
+    });
+
+    elements.comparisonBody.appendChild(row);
+  }
+  applyColumnFilter(document.querySelector('.admin-column-filters .active')?.dataset.filter || 'all');
 }
 
 function renderVideos(lesson) {
@@ -242,7 +354,6 @@ function setSaveStatus(text, className = '') {
 elements.courseTitle.addEventListener('input', () => {
   const value = elements.courseTitle.value;
   course.title = value;
-  elements.breadcrumb.textContent = value || 'Без назви';
   scheduleSave('course-title', () => supabase.from('courses').update({ title: value.trim() || 'Без назви' }).eq('id', courseId));
 });
 
@@ -280,6 +391,7 @@ elements.lessonParent.addEventListener('change', () => {
   if (!lesson) return;
   lesson.parent_lesson_id = elements.lessonParent.value || null;
   renderLessonList();
+  renderComparison();
   runSave(() => supabase.from('lessons').update({ parent_lesson_id: lesson.parent_lesson_id }).eq('id', lesson.id));
 });
 
@@ -289,6 +401,7 @@ elements.homeworkEnabled.addEventListener('change', () => {
   lesson.homework_type = elements.homeworkEnabled.checked ? (elements.homeworkType.value || 'text') : null;
   elements.homeworkSettings.hidden = !lesson.homework_type;
   renderLessonList();
+  renderComparison();
   runSave(() => supabase.from('lessons').update({ homework_type: lesson.homework_type }).eq('id', lesson.id));
 });
 
@@ -297,10 +410,11 @@ elements.homeworkType.addEventListener('change', () => {
   if (!lesson) return;
   lesson.homework_type = elements.homeworkType.value;
   renderLessonList();
+  renderComparison();
   runSave(() => supabase.from('lessons').update({ homework_type: lesson.homework_type }).eq('id', lesson.id));
 });
 
-document.getElementById('add-lesson').addEventListener('click', async () => {
+async function createLesson() {
   await flushPending();
   setSaveStatus('Створюємо урок…', 'saving');
   const { data, error } = await supabase
@@ -320,7 +434,10 @@ document.getElementById('add-lesson').addEventListener('click', async () => {
   }
   selectedLessonId = data.id;
   await load();
-});
+}
+
+document.getElementById('add-lesson').addEventListener('click', createLesson);
+document.getElementById('add-lesson-table').addEventListener('click', createLesson);
 
 document.getElementById('delete-lesson').addEventListener('click', async () => {
   const lesson = selectedLesson();
@@ -362,6 +479,7 @@ async function reorderLesson(sourceId, targetId) {
 async function persistLessonOrder(next) {
   lessons = next.map((lesson, index) => ({ ...lesson, order_index: index }));
   renderLessonList();
+  renderComparison();
   await runSave(async () => {
     const results = await Promise.all(lessons.map((lesson) =>
       supabase.from('lessons').update({ order_index: lesson.order_index }).eq('id', lesson.id)
@@ -372,8 +490,13 @@ async function persistLessonOrder(next) {
 
 document.getElementById('add-video').addEventListener('click', async () => {
   const lesson = selectedLesson();
-  const youtubeId = extractYoutubeId(elements.newVideo.value);
-  if (!lesson || !youtubeId) return;
+  if (!lesson) return;
+  await addVideoToLesson(lesson, elements.newVideo);
+});
+
+async function addVideoToLesson(lesson, input) {
+  const youtubeId = extractYoutubeId(input.value);
+  if (!youtubeId) return;
   if (!/^[\w-]{11}$/.test(youtubeId)) {
     showError('Не вдалося розпізнати YouTube-посилання. Вставте повне посилання або ID з 11 символів.');
     return;
@@ -388,9 +511,9 @@ document.getElementById('add-video').addEventListener('click', async () => {
     showError('Не вдалося додати відео.');
     return;
   }
-  elements.newVideo.value = '';
+  input.value = '';
   await load();
-});
+}
 
 elements.newVideo.addEventListener('keydown', (event) => {
   if (event.key === 'Enter') {
@@ -423,11 +546,55 @@ async function moveVideo(index, direction) {
   });
 }
 
-document.querySelectorAll('.admin-tabs [data-tab]').forEach((button) => {
-  button.addEventListener('click', () => {
-    document.querySelectorAll('.admin-tabs [data-tab]').forEach((item) => item.classList.toggle('active', item === button));
-    document.querySelectorAll('.admin-tab-panel').forEach((panel) => panel.classList.toggle('active', panel.dataset.panel === button.dataset.tab));
+function setEditorMode(mode) {
+  editorMode = mode;
+  const isTable = mode === 'table';
+  elements.singleView.hidden = isTable;
+  elements.tableView.hidden = !isTable;
+  elements.singleMode.classList.toggle('active', !isTable);
+  elements.tableMode.classList.toggle('active', isTable);
+  elements.shell.classList.toggle('table-mode', isTable);
+  if (isTable) renderComparison();
+  else {
+    renderLessonList();
+    renderEditor();
+  }
+  applySidebarState();
+}
+
+function applySidebarState() {
+  const collapsed = editorMode === 'table' || sidebarManuallyCollapsed;
+  elements.shell.classList.toggle('sidebar-collapsed', collapsed);
+  elements.toggleSidebar.setAttribute('aria-label', collapsed ? 'Розгорнути головне меню' : 'Згорнути головне меню');
+  elements.toggleSidebar.title = collapsed ? 'Розгорнути меню' : 'Згорнути меню';
+}
+
+function applyColumnFilter(filter) {
+  document.querySelectorAll('.admin-column-filters [data-filter]').forEach((button) => button.classList.toggle('active', button.dataset.filter === filter));
+  document.querySelectorAll('[data-table-column]').forEach((cell) => {
+    const group = cell.dataset.tableColumn;
+    const visible = filter === 'all' || group === filter || (group === 'homework-access' && (filter === 'homework' || filter === 'access'));
+    cell.hidden = !visible;
   });
+  document.querySelectorAll('[data-table-subsection]').forEach((section) => {
+    section.hidden = (filter === 'homework' || filter === 'access') && section.dataset.tableSubsection !== filter;
+  });
+}
+
+elements.singleMode.addEventListener('click', () => setEditorMode('single'));
+elements.tableMode.addEventListener('click', () => setEditorMode('table'));
+elements.toggleSidebar.addEventListener('click', () => {
+  sidebarManuallyCollapsed = !elements.shell.classList.contains('sidebar-collapsed');
+  localStorage.setItem('admin-sidebar-collapsed', sidebarManuallyCollapsed ? '1' : '0');
+  applySidebarState();
+});
+document.querySelectorAll('.admin-column-filters [data-filter]').forEach((button) => button.addEventListener('click', () => applyColumnFilter(button.dataset.filter)));
+
+document.getElementById('choose-course-presentation').addEventListener('click', () => elements.presentationFile.click());
+elements.presentationFile.addEventListener('change', () => {
+  const file = elements.presentationFile.files[0];
+  if (!file) return;
+  elements.presentationNote.textContent = `${file.name} · завантаження підключимо наступним кроком`;
 });
 
 elements.lessonSearch.addEventListener('input', renderLessonList);
@@ -466,6 +633,10 @@ function escapeHtml(value) {
   const div = document.createElement('div');
   div.textContent = value || '';
   return div.innerHTML;
+}
+
+function escapeAttribute(value) {
+  return escapeHtml(value).replace(/"/g, '&quot;');
 }
 
 load();
