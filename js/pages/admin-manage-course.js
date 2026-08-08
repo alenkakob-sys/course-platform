@@ -1,12 +1,13 @@
 import { supabase } from '../supabaseClient.js';
 import { requireAdmin, wireLogoutButton } from '../auth.js';
+import { ADMIN_LESSON_SELECT, HOMEWORK_REQUIREMENTS, normalizeLesson } from '../models/lesson.js';
 
-const params = new URLSearchParams(window.location.search);
-const courseId = params.get('course');
+const urlParams = new URLSearchParams(window.location.search);
+const courseId = urlParams.get('course');
 if (!courseId) window.location.href = 'admin-manage.html';
 
-const auth = await requireAdmin();
-if (!auth) throw new Error('not admin');
+const authenticatedAdmin = await requireAdmin();
+if (!authenticatedAdmin) throw new Error('not admin');
 wireLogoutButton(document.getElementById('logout-btn'));
 
 const elements = {
@@ -38,51 +39,54 @@ const elements = {
   newVideo: document.getElementById('new-video'),
   homeworkEnabled: document.getElementById('homework-enabled'),
   homeworkSettings: document.getElementById('homework-settings'),
-  homeworkType: document.getElementById('homework-type'),
   homeworkDescription: document.getElementById('homework-description'),
   error: document.getElementById('editor-error'),
   presentationFile: document.getElementById('course-presentation-file'),
   presentationNote: document.getElementById('presentation-note'),
+  courseSettings: document.getElementById('course-settings'),
+  courseSettingsToggle: document.getElementById('course-settings-toggle'),
+  courseSettingsClose: document.getElementById('course-settings-close'),
 };
 
-let course = null;
+const homeworkRequirementInputs = new Map(HOMEWORK_REQUIREMENTS.map(({ field }) => [
+  field,
+  document.getElementById(field.replaceAll('_', '-')),
+]));
+
+let courseState = null;
 let lessons = [];
-let selectedLessonId = params.get('lesson');
+let selectedLessonId = urlParams.get('lesson');
 let draggedLessonId = null;
-let savingCounter = 0;
+let saveSequence = 0;
 let editorMode = 'single';
 let sidebarManuallyCollapsed = localStorage.getItem('admin-sidebar-collapsed') === '1';
 const pendingSaves = new Map();
 
 async function load({ keepSelection = true } = {}) {
   setSaveStatus('Завантаження…', 'saving');
-  const [{ data: courseData, error }, { data: presentation }, { data: lessonRows }, { data: previewAccess }] = await Promise.all([
+  const [{ data: courseData, error: courseError }, { data: presentation }, { data: lessonRows, error: lessonsError }, { data: previewAccess }] = await Promise.all([
     supabase.from('courses').select('id, title').eq('id', courseId).single(),
     supabase.from('presentations').select('embed_url').eq('course_id', courseId).maybeSingle(),
     supabase
       .from('lessons')
-      .select('id, title, short_label, description, homework_type, homework_description, parent_lesson_id, order_index, videos(id, youtube_id, title, order_index)')
+      .select(ADMIN_LESSON_SELECT)
       .eq('course_id', courseId)
       .order('order_index'),
     supabase.from('course_access').select('student_id').eq('course_id', courseId).limit(1).maybeSingle(),
   ]);
 
-  if (error || !courseData) {
+  if (courseError || lessonsError || !courseData) {
     showError('Курс не знайдено або його не вдалося завантажити.');
     setSaveStatus('Помилка завантаження', 'error');
     return;
   }
 
-  course = courseData;
-  course.presentationUrl = presentation?.embed_url || '';
-  lessons = (lessonRows || []).map((lesson) => ({
-    ...lesson,
-    videos: [...(lesson.videos || [])].sort((a, b) => a.order_index - b.order_index),
-  }));
+  courseState = { ...courseData, presentationUrl: presentation?.embed_url || '' };
+  lessons = (lessonRows || []).map(normalizeLesson);
   if (!keepSelection || !lessons.some((lesson) => lesson.id === selectedLessonId)) selectedLessonId = lessons[0]?.id || null;
 
-  elements.courseTitle.value = course.title;
-  elements.presentationUrl.value = course.presentationUrl;
+  elements.courseTitle.value = courseState.title;
+  elements.presentationUrl.value = courseState.presentationUrl;
   if (previewAccess?.student_id) {
     elements.preview.href = `course.html?course=${courseId}&student=${previewAccess.student_id}&admin=1`;
     elements.preview.classList.remove('disabled');
@@ -115,7 +119,7 @@ function renderLessonList() {
     card.dataset.lessonId = lesson.id;
     card.innerHTML = `
       <span class="admin-drag" title="Перетягнути">⠿</span>
-      <div><h3>${escapeHtml(lesson.short_label ? `${lesson.short_label} · ${lesson.title}` : lesson.title)}</h3><p>${lesson.videos.length} відео · ${lesson.homework_type ? 'є ДЗ' : 'без ДЗ'}</p></div>
+      <div><h3>${escapeHtml(lesson.short_label ? `${lesson.short_label} · ${lesson.title}` : lesson.title)}</h3><p>${lesson.videos.length} відео · ${lesson.homework_enabled ? 'є ДЗ' : 'без ДЗ'}</p></div>
       <span class="admin-move-controls">
         <button data-move="up" title="Вище" ${actualIndex === 0 ? 'disabled' : ''}>↑</button>
         <button data-move="down" title="Нижче" ${actualIndex === lessons.length - 1 ? 'disabled' : ''}>↓</button>
@@ -161,16 +165,16 @@ function renderEditor() {
   elements.lessonParent.value = lesson.parent_lesson_id || '';
 
   renderVideos(lesson);
-  elements.homeworkEnabled.checked = Boolean(lesson.homework_type);
-  elements.homeworkSettings.hidden = !lesson.homework_type;
-  elements.homeworkType.value = lesson.homework_type || 'text';
+  elements.homeworkEnabled.checked = lesson.homework_enabled;
+  elements.homeworkSettings.hidden = !lesson.homework_enabled;
+  for (const [field, input] of homeworkRequirementInputs) input.checked = lesson[field];
   elements.homeworkDescription.value = lesson.homework_description || '';
 }
 
 function renderComparison() {
   elements.comparisonBody.innerHTML = '';
   if (!lessons.length) {
-    elements.comparisonBody.innerHTML = '<tr><td colspan="4">Додайте перший урок.</td></tr>';
+    elements.comparisonBody.innerHTML = '<tr><td colspan="3">Додайте перший урок.</td></tr>';
     return;
   }
 
@@ -178,30 +182,26 @@ function renderComparison() {
     const row = document.createElement('tr');
     row.dataset.lessonId = lesson.id;
     row.innerHTML = `
-      <th scope="row" class="admin-table-lesson">
-        <strong>${escapeHtml(lesson.short_label || '—')}</strong>
-        <span>${escapeHtml(lesson.title)}</span>
-      </th>
       <td data-table-column="main">
         <div class="admin-table-main-grid">
-          <label>Мітка<input data-table-field="short_label" value="${escapeAttribute(lesson.short_label || '')}" /></label>
-          <label>Назва<input data-table-field="title" value="${escapeAttribute(lesson.title)}" /></label>
+          <label>Мітка<input type="text" data-table-field="short_label" value="${escapeAttribute(lesson.short_label || '')}" /></label>
+          <label>Назва<input type="text" data-table-field="title" value="${escapeAttribute(lesson.title)}" /></label>
         </div>
         <label>Структура<select data-table-field="parent_lesson_id"></select></label>
         <label>Опис<textarea data-table-field="description" rows="2">${escapeHtml(lesson.description || '')}</textarea></label>
       </td>
       <td data-table-column="materials">
         <div class="admin-table-videos"></div>
-        <div class="admin-table-add-video"><input data-table-new-video placeholder="YouTube-посилання" /><button type="button">＋</button></div>
+        <div class="admin-table-add-video"><input type="text" data-table-new-video placeholder="YouTube-посилання" /><button type="button">＋</button></div>
         <div class="admin-table-presentation">▧ Презентація уроку: не додана</div>
       </td>
       <td data-table-column="homework-access">
         <div data-table-subsection="homework" class="admin-table-subsection">
-          <label class="admin-table-check"><input data-table-homework-enabled type="checkbox" ${lesson.homework_type ? 'checked' : ''} /> Є ДЗ</label>
-          <select data-table-field="homework_type" ${lesson.homework_type ? '' : 'disabled'}>
-            <option value="text">Текст</option><option value="photo">Фото</option><option value="video">Відео</option>
-          </select>
-          <textarea data-table-field="homework_description" rows="2" placeholder="Текст завдання" ${lesson.homework_type ? '' : 'disabled'}>${escapeHtml(lesson.homework_description || '')}</textarea>
+          <label class="admin-table-check"><input data-table-homework-enabled type="checkbox" ${lesson.homework_enabled ? 'checked' : ''} /> Є ДЗ</label>
+          <div class="admin-table-requirements">
+            ${HOMEWORK_REQUIREMENTS.map(({ field, label }) => `<label><input data-require="${field}" type="checkbox" ${lesson[field] ? 'checked' : ''} ${lesson.homework_enabled ? '' : 'disabled'} /> ${label}</label>`).join('')}
+          </div>
+          <textarea data-table-field="homework_description" rows="2" placeholder="Текст завдання" ${lesson.homework_enabled ? '' : 'disabled'}>${escapeHtml(lesson.homework_description || '')}</textarea>
         </div>
         <div data-table-subsection="access" class="admin-table-subsection">
           <label>Доступ<select disabled><option>Вільний доступ</option><option>Після здачі ДЗ</option><option>Після перевірки</option></select></label>
@@ -218,9 +218,6 @@ function renderComparison() {
       parentSelect.appendChild(option);
     }
     parentSelect.value = lesson.parent_lesson_id || '';
-
-    const homeworkType = row.querySelector('[data-table-field="homework_type"]');
-    homeworkType.value = lesson.homework_type || 'text';
 
     const videosWrap = row.querySelector('.admin-table-videos');
     if (!lesson.videos.length) videosWrap.innerHTML = '<span class="admin-table-empty">Без відео</span>';
@@ -239,8 +236,6 @@ function renderComparison() {
         const value = field === 'parent_lesson_id' ? (fieldEl.value || null) : fieldEl.value;
         lesson[field] = value;
         if (field === 'title' || field === 'short_label') {
-          row.querySelector('.admin-table-lesson strong').textContent = lesson.short_label || '—';
-          row.querySelector('.admin-table-lesson span').textContent = lesson.title || 'Без назви';
           renderLessonList();
         }
         scheduleSave(`lesson-${lesson.id}-${field}`, () => supabase.from('lessons').update({ [field]: value }).eq('id', lesson.id));
@@ -249,11 +244,19 @@ function renderComparison() {
 
     const homeworkToggle = row.querySelector('[data-table-homework-enabled]');
     homeworkToggle.addEventListener('change', () => {
-      lesson.homework_type = homeworkToggle.checked ? (homeworkType.value || 'text') : null;
-      homeworkType.disabled = !homeworkToggle.checked;
+      lesson.homework_enabled = homeworkToggle.checked;
+      row.querySelectorAll('[data-require]').forEach((checkbox) => { checkbox.disabled = !homeworkToggle.checked; });
       row.querySelector('[data-table-field="homework_description"]').disabled = !homeworkToggle.checked;
       renderLessonList();
-      runSave(() => supabase.from('lessons').update({ homework_type: lesson.homework_type }).eq('id', lesson.id));
+      runSave(() => supabase.from('lessons').update({ homework_enabled: lesson.homework_enabled }).eq('id', lesson.id));
+    });
+
+    row.querySelectorAll('[data-require]').forEach((checkbox) => {
+      checkbox.addEventListener('change', () => {
+        const field = checkbox.dataset.require;
+        lesson[field] = checkbox.checked;
+        runSave(() => supabase.from('lessons').update({ [field]: checkbox.checked }).eq('id', lesson.id));
+      });
     });
 
     const addVideoButton = row.querySelector('.admin-table-add-video button');
@@ -333,12 +336,12 @@ async function flushPending() {
 }
 
 async function runSave(task) {
-  const currentSave = ++savingCounter;
+  const currentSave = ++saveSequence;
   setSaveStatus('Зберігаємо…', 'saving');
   try {
     const result = await task();
     if (result?.error) throw result.error;
-    if (currentSave === savingCounter && pendingSaves.size === 0) setSaveStatus('Збережено');
+    if (currentSave === saveSequence && pendingSaves.size === 0) setSaveStatus('Збережено');
   } catch (error) {
     console.error('admin save failed', error);
     showError('Не вдалося зберегти зміни. Перевірте інтернет і спробуйте ще раз.');
@@ -353,13 +356,13 @@ function setSaveStatus(text, className = '') {
 
 elements.courseTitle.addEventListener('input', () => {
   const value = elements.courseTitle.value;
-  course.title = value;
+  courseState.title = value;
   scheduleSave('course-title', () => supabase.from('courses').update({ title: value.trim() || 'Без назви' }).eq('id', courseId));
 });
 
 elements.presentationUrl.addEventListener('input', () => {
   const value = elements.presentationUrl.value.trim();
-  course.presentationUrl = value;
+  courseState.presentationUrl = value;
   scheduleSave('course-presentation', () => value
     ? supabase.from('presentations').upsert({ course_id: courseId, embed_url: value })
     : supabase.from('presentations').delete().eq('course_id', courseId));
@@ -398,21 +401,20 @@ elements.lessonParent.addEventListener('change', () => {
 elements.homeworkEnabled.addEventListener('change', () => {
   const lesson = selectedLesson();
   if (!lesson) return;
-  lesson.homework_type = elements.homeworkEnabled.checked ? (elements.homeworkType.value || 'text') : null;
-  elements.homeworkSettings.hidden = !lesson.homework_type;
+  lesson.homework_enabled = elements.homeworkEnabled.checked;
+  elements.homeworkSettings.hidden = !lesson.homework_enabled;
   renderLessonList();
   renderComparison();
-  runSave(() => supabase.from('lessons').update({ homework_type: lesson.homework_type }).eq('id', lesson.id));
+  runSave(() => supabase.from('lessons').update({ homework_enabled: lesson.homework_enabled }).eq('id', lesson.id));
 });
 
-elements.homeworkType.addEventListener('change', () => {
+homeworkRequirementInputs.forEach((checkbox, field) => checkbox.addEventListener('change', () => {
   const lesson = selectedLesson();
   if (!lesson) return;
-  lesson.homework_type = elements.homeworkType.value;
-  renderLessonList();
+  lesson[field] = checkbox.checked;
   renderComparison();
-  runSave(() => supabase.from('lessons').update({ homework_type: lesson.homework_type }).eq('id', lesson.id));
-});
+  runSave(() => supabase.from('lessons').update({ [field]: checkbox.checked }).eq('id', lesson.id));
+}));
 
 async function createLesson() {
   await flushPending();
@@ -570,6 +572,7 @@ function applySidebarState() {
 }
 
 function applyColumnFilter(filter) {
+  document.querySelector('.admin-comparison-table').dataset.activeFilter = filter;
   document.querySelectorAll('.admin-column-filters [data-filter]').forEach((button) => button.classList.toggle('active', button.dataset.filter === filter));
   document.querySelectorAll('[data-table-column]').forEach((cell) => {
     const group = cell.dataset.tableColumn;
@@ -591,6 +594,11 @@ elements.toggleSidebar.addEventListener('click', () => {
 document.querySelectorAll('.admin-column-filters [data-filter]').forEach((button) => button.addEventListener('click', () => applyColumnFilter(button.dataset.filter)));
 
 document.getElementById('choose-course-presentation').addEventListener('click', () => elements.presentationFile.click());
+elements.courseSettingsToggle.addEventListener('click', () => elements.courseSettings.showModal());
+elements.courseSettingsClose.addEventListener('click', () => elements.courseSettings.close());
+elements.courseSettings.addEventListener('click', (event) => {
+  if (event.target === elements.courseSettings) elements.courseSettings.close();
+});
 elements.presentationFile.addEventListener('change', () => {
   const file = elements.presentationFile.files[0];
   if (!file) return;

@@ -1,61 +1,61 @@
 import { supabase } from '../supabaseClient.js';
 import { requireAuth } from '../auth.js';
 import { mountChatPanel } from '../components/chat-panel.js';
-import { mountHomeworkField } from '../components/homework-field.js';
+import { mountHomeworkField } from '../components/homework-field.js?v=20260808-3';
+import { STUDENT_LESSON_SELECT, normalizeLesson } from '../models/lesson.js';
 
-const params = new URLSearchParams(window.location.search);
-const courseId = params.get('course');
-const isAdminView = params.get('admin') === '1';
-const requestedLessonId = params.get('lesson');
+const urlParams = new URLSearchParams(window.location.search);
+const courseId = urlParams.get('course');
+const isAdminView = urlParams.get('admin') === '1';
+const requestedLessonId = urlParams.get('lesson');
 
-const auth = await requireAuth();
-if (!auth) throw new Error('not authenticated');
+const authenticatedUser = await requireAuth();
+if (!authenticatedUser) throw new Error('not authenticated');
 
-if (isAdminView && auth.profile.role !== 'admin') {
+if (isAdminView && authenticatedUser.profile.role !== 'admin') {
   window.location.href = 'courses.html';
   throw new Error('not admin');
 }
 
-const studentId = isAdminView ? params.get('student') : auth.profile.id;
+const studentId = isAdminView ? urlParams.get('student') : authenticatedUser.profile.id;
 
 document.getElementById('back-link').href = isAdminView ? 'admin.html' : 'courses.html';
 
-const [{ data: course }, { data: presentation }, { data: lessons }, studentProfile] = await Promise.all([
+const [{ data: courseRecord, error: courseError }, { data: coursePresentation }, { data: lessonRows, error: lessonsError }, studentProfile] = await Promise.all([
   supabase.from('courses').select('id, title').eq('id', courseId).single(),
   supabase.from('presentations').select('embed_url').eq('course_id', courseId).maybeSingle(),
-  supabase.from('lessons').select('id, title, short_label, description, homework_type, homework_description, order_index, videos(youtube_id, title, order_index)').eq('course_id', courseId).order('order_index'),
+  supabase.from('lessons').select(STUDENT_LESSON_SELECT).eq('course_id', courseId).order('order_index'),
   isAdminView ? supabase.from('profiles').select('full_name, email').eq('id', studentId).single().then((r) => r.data) : null,
 ]);
 
-document.getElementById('course-title').textContent = course?.title || '';
+if (courseError || lessonsError || !courseRecord) throw new Error('Course data could not be loaded');
+
+document.getElementById('course-title').textContent = courseRecord.title;
 if (isAdminView && studentProfile) {
-  const sub = document.getElementById('student-context');
-  sub.textContent = `Перегляд: ${studentProfile.full_name || studentProfile.email}`;
-  sub.style.display = 'block';
+  const studentContext = document.getElementById('student-context');
+  studentContext.textContent = `Перегляд: ${studentProfile.full_name || studentProfile.email}`;
+  studentContext.style.display = 'block';
 }
 
-if (presentation?.embed_url) {
-  const block = document.getElementById('presentation-block');
-  block.style.display = 'block';
-  document.getElementById('presentation-link').href = presentation.embed_url;
+if (coursePresentation?.embed_url) {
+  const presentationBlock = document.getElementById('presentation-block');
+  presentationBlock.style.display = 'block';
+  document.getElementById('presentation-link').href = coursePresentation.embed_url;
 }
 
-const lessonList = (lessons || []).map((lesson) => ({
-  ...lesson,
-  videos: [...(lesson.videos || [])].sort((a, b) => a.order_index - b.order_index),
-}));
+const lessonList = (lessonRows || []).map(normalizeLesson);
 let selectedLessonId = lessonList.some((lesson) => lesson.id === requestedLessonId) ? requestedLessonId : lessonList[0]?.id;
-const selectedVideoByLesson = new Map();
+const selectedVideoIndexByLesson = new Map();
 
 function renderStrip() {
-  const stripEl = document.getElementById('lesson-strip');
-  stripEl.innerHTML = '';
-  for (const l of lessonList) {
-    const btn = document.createElement('button');
-    btn.className = 'lesson-circle' + (l.id === selectedLessonId ? ' active' : '');
-    btn.textContent = l.short_label || l.title.slice(0, 3);
-    btn.addEventListener('click', () => { selectedLessonId = l.id; renderStrip(); renderLesson(); });
-    stripEl.appendChild(btn);
+  const lessonStrip = document.getElementById('lesson-strip');
+  lessonStrip.innerHTML = '';
+  for (const lesson of lessonList) {
+    const lessonButton = document.createElement('button');
+    lessonButton.className = `lesson-circle${lesson.id === selectedLessonId ? ' active' : ''}`;
+    lessonButton.textContent = lesson.short_label || lesson.title.slice(0, 3);
+    lessonButton.addEventListener('click', () => { selectedLessonId = lesson.id; renderStrip(); renderLesson(); });
+    lessonStrip.appendChild(lessonButton);
   }
 }
 
@@ -63,7 +63,7 @@ function renderLesson() {
   const lesson = lessonList.find((l) => l.id === selectedLessonId);
   const videoBox = document.getElementById('video-box');
   const videos = lesson?.videos || [];
-  const selectedVideoIndex = Math.min(selectedVideoByLesson.get(lesson?.id) || 0, Math.max(videos.length - 1, 0));
+  const selectedVideoIndex = Math.min(selectedVideoIndexByLesson.get(lesson?.id) || 0, Math.max(videos.length - 1, 0));
   const youtubeId = videos[selectedVideoIndex]?.youtube_id;
   videoBox.innerHTML = youtubeId
     ? `<iframe src="https://www.youtube-nocookie.com/embed/${youtubeId}?rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`
@@ -78,7 +78,7 @@ function renderLesson() {
     button.className = index === selectedVideoIndex ? 'active' : '';
     button.textContent = video.title || `Відео ${index + 1}`;
     button.addEventListener('click', () => {
-      selectedVideoByLesson.set(lesson.id, index);
+      selectedVideoIndexByLesson.set(lesson.id, index);
       renderLesson();
     });
     selector.appendChild(button);

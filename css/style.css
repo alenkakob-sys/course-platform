@@ -162,6 +162,7 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
 }
 
 .admin-body * { box-sizing: border-box; }
+.admin-body [hidden] { display: none !important; }
 .admin-body a { color: inherit; }
 .admin-body button,
 .admin-body input,
@@ -329,7 +330,7 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
 .admin-course-name-panel { display: grid; grid-template-columns: 130px minmax(240px, 520px); align-items: center; gap: 14px; margin-bottom: 14px; border: 1px solid var(--admin-border); border-radius: 10px; padding: 12px 14px; background: rgba(32,36,40,.72); }
 .admin-course-name-panel label { color: var(--admin-muted); font-size: 12px; }
 .admin-course-name-panel input { font-size: 16px; font-weight: 700; }
-.admin-editor-layout { display: grid; grid-template-columns: minmax(270px, 340px) minmax(0, 1fr); gap: 15px; align-items: start; }
+.admin-editor-layout { display: grid; grid-template-columns: minmax(250px, 300px) minmax(0, 1fr); gap: 15px; align-items: start; }
 .admin-lessons-panel,
 .admin-lesson-editor { border: 1px solid var(--admin-border); border-radius: 10px; background: rgba(31,35,39,.82); }
 .admin-lessons-panel { position: sticky; top: 18px; padding: 15px; max-height: calc(100vh - 36px); overflow: auto; }
@@ -369,7 +370,6 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
 .admin-field select { margin-top: 6px; }
 .admin-field { display: block; margin-top: 15px; }
 .admin-field small { display: block; color: #858d95; margin-top: 6px; line-height: 1.45; }
-.admin-materials-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .admin-video-list { display: grid; gap: 7px; margin: 14px 0; }
 .admin-video-item { display: grid; grid-template-columns: 70px minmax(0,1fr) auto; align-items: center; gap: 10px; border: 1px solid var(--admin-border); border-radius: 8px; padding: 7px; }
 .admin-video-item img { width: 70px; aspect-ratio: 16/9; object-fit: cover; border-radius: 5px; background: #151719; }
@@ -400,7 +400,6 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
 .admin-soon { border-radius: 99px; background: #34404d; padding: 5px 8px; color: var(--admin-blue) !important; }
 
 @media (max-width: 980px) {
-  .admin-materials-grid { grid-template-columns: 1fr; }
   .admin-form-grid.two { grid-template-columns: 1fr; }
   .admin-invite-panel { grid-template-columns: 1fr; }
   .admin-invite-panel #invite-status { grid-column: 1; }
@@ -498,43 +497,30 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
 .admin-single-sections { margin-top: 12px; }
 .admin-primary-fields { margin-bottom: 12px; }
 .lesson-identity-grid { grid-template-columns: 110px minmax(240px, 1fr) minmax(190px, .65fr); margin-top: 0; }
-.admin-presentations-panel { display: grid; align-content: start; gap: 11px; }
-.admin-presentation-field {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  min-height: 56px; padding: 9px 10px; border: 1px solid var(--admin-border); border-radius: 8px;
-}
-.admin-presentation-field strong { font-size: 12px; }
-.admin-presentation-field .admin-secondary { min-height: 36px; padding-inline: 12px; font-size: 12px; }
-.admin-presentation-field.muted-field { opacity: .58; }
-.admin-presentation-field button:disabled { cursor: not-allowed; }
 .compact-field { margin-top: 0; }
 .admin-inline-note { min-height: 16px; margin: -2px 0 0 !important; font-size: 11px; }
-.admin-homework-access-panel { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(250px, .75fr); gap: 22px; margin-top: 12px; }
-.admin-access-column { padding-left: 22px; border-left: 1px solid var(--admin-border); }
+.admin-homework-access-panel { display: grid; gap: 18px; }
+.admin-access-column { padding-top: 18px; border-top: 1px solid var(--admin-border); }
 .admin-access-column select { margin-top: 5px; }
 
 .admin-comparison-view { border: 1px solid var(--admin-border); border-radius: 10px; background: rgba(31,35,39,.82); overflow: hidden; }
 .admin-comparison-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border-bottom: 1px solid var(--admin-border); }
 .admin-comparison-scroll { overflow: auto; max-height: calc(100vh - 116px); }
-.admin-comparison-table { width: 100%; min-width: 1180px; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
+.admin-comparison-table { width: 100%; min-width: 1050px; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
 .admin-comparison-table th,
 .admin-comparison-table td { padding: 12px; border: 0; border-right: 1px solid var(--admin-border); border-bottom: 1px solid var(--admin-border); text-align: left; vertical-align: top; }
 .admin-comparison-table thead th { position: sticky; top: 0; z-index: 4; background: #252a2e; color: #dce0e3; font-size: 12px; }
-.admin-comparison-table thead th:first-child { left: 0; z-index: 6; width: 190px; }
-.admin-comparison-table thead th:nth-child(2) { width: 360px; }
-.admin-comparison-table thead th:nth-child(3) { width: 310px; }
-.admin-comparison-table thead th:nth-child(4) { width: 340px; }
+.admin-comparison-table thead th:nth-child(1) { width: 36%; }
+.admin-comparison-table thead th:nth-child(2) { width: 31%; }
+.admin-comparison-table thead th:nth-child(3) { width: 33%; }
 .admin-comparison-table tbody tr:last-child > * { border-bottom: 0; }
 .admin-comparison-table tr > *:last-child { border-right: 0; }
-.admin-table-lesson { position: sticky; left: 0; z-index: 3; background: #202428; }
-.admin-table-lesson strong,
-.admin-table-lesson span { display: block; }
-.admin-table-lesson strong { color: var(--admin-gold); font-size: 13px; }
-.admin-table-lesson span { margin-top: 5px; color: var(--admin-text); font-size: 12px; line-height: 1.35; }
 .admin-comparison-table label { display: block; color: var(--admin-muted); font-size: 10px; }
 .admin-comparison-table input,
 .admin-comparison-table textarea,
-.admin-comparison-table select { margin-top: 4px; padding: 8px 9px; border-radius: 6px; font-size: 12px; }
+.admin-comparison-table select { min-width: 0; margin-top: 4px; padding: 8px 9px; border-radius: 6px; font-size: 12px; }
+.admin-comparison-table[data-active-filter]:not([data-active-filter="all"]) th,
+.admin-comparison-table[data-active-filter]:not([data-active-filter="all"]) td { width: auto; }
 .admin-table-main-grid { display: grid; grid-template-columns: 72px minmax(0,1fr); gap: 7px; margin-bottom: 7px; }
 .admin-comparison-table td > label + label { margin-top: 7px; }
 .admin-table-videos { display: flex; flex-wrap: wrap; gap: 5px; min-height: 28px; }
@@ -548,12 +534,45 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
 .admin-table-subsection select { margin-top: 6px; }
 .admin-table-check { display: flex !important; align-items: center; gap: 6px; color: var(--admin-text) !important; }
 .admin-table-check input { width: auto; margin: 0; accent-color: var(--admin-gold); }
+.admin-table-requirements { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 8px; }
+.admin-table-requirements label { display: flex; align-items: center; gap: 4px; color: var(--admin-text); }
+.admin-table-requirements input { width: auto; margin: 0; accent-color: var(--admin-gold); }
 
-@media (max-width: 1180px) {
+.admin-lesson-data-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(280px, .95fr); gap: 12px; }
+.admin-materials-panel > h3 { margin-bottom: 15px; }
+.admin-material-subsection + .admin-material-subsection { margin-top: 17px; padding-top: 17px; border-top: 1px solid var(--admin-border); }
+.admin-material-subsection h4 { margin: 0 0 10px; font-size: 13px; }
+.admin-material-subsection .admin-section-title { margin-bottom: 0; }
+.admin-homework-formats { display: flex; flex-wrap: wrap; gap: 9px 16px; margin: 14px 0 0; padding: 0; border: 0; }
+.admin-homework-formats legend { margin-bottom: 8px; color: var(--admin-muted); font-size: 11px; }
+.admin-homework-formats label { display: flex; align-items: center; gap: 6px; color: var(--admin-text); font-size: 12px; }
+.admin-homework-formats input { width: auto; accent-color: var(--admin-gold); }
+.lesson-identity-grid > label { display: grid; grid-template-rows: auto 54px; align-items: stretch; }
+.lesson-identity-grid input,
+.lesson-identity-grid select { height: 54px; margin-top: 6px; }
+
+.admin-icon-button { width: 44px; min-height: 44px; border: 1px solid #50575e; border-radius: 8px; background: transparent; color: #e6e8ea; cursor: pointer; }
+.admin-icon-button:hover { background: #2b3035; }
+.admin-course-settings { width: min(520px, calc(100vw - 28px)); border: 1px solid var(--admin-border); border-radius: 12px; background: #202428; color: var(--admin-text); padding: 20px; box-shadow: 0 30px 90px rgba(0,0,0,.55); }
+.admin-course-settings::backdrop { background: rgba(8,10,12,.74); backdrop-filter: blur(3px); }
+.admin-course-settings section { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--admin-border); }
+.admin-course-settings h2,
+.admin-course-settings h3 { margin: 0; }
+.admin-course-settings h2 { font-size: 19px; }
+.admin-course-settings h3 { font-size: 15px; }
+.admin-course-settings .admin-secondary { width: 100%; margin-top: 12px; }
+.admin-dialog-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.admin-dialog-title button { border: 0; background: transparent; color: var(--admin-muted); cursor: pointer; }
+
+@media (max-width: 1020px) {
   .admin-compact-header { grid-template-columns: minmax(240px, 1fr) auto; }
   .admin-compact-header .admin-header-actions { grid-column: 1 / -1; justify-content: flex-end; }
   .lesson-identity-grid { grid-template-columns: 100px minmax(200px, 1fr); }
   .lesson-identity-grid label:last-child { grid-column: 1 / -1; }
+}
+
+@media (max-width: 980px) {
+  .admin-lesson-data-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 800px) {
@@ -582,6 +601,4 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
   .admin-course-path .admin-save-status { flex: 0 0 100%; }
   .admin-course-path #course-title { font-size: 15px; }
   .lesson-identity-grid { grid-template-columns: 90px minmax(0,1fr); }
-  .admin-presentation-field { align-items: stretch; flex-direction: column; }
-  .admin-presentation-field .admin-secondary { width: 100%; }
 }

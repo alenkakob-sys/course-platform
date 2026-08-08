@@ -1,8 +1,9 @@
 import { getOrCreateThread, sendMessage } from '../chat.js';
 import { uploadPrivateFile, formatFileSize } from '../r2-files.js';
+import { getRequiredHomeworkFormats } from '../models/lesson.js';
 
 export function mountHomeworkField(container, { lesson, studentId, courseId, readOnly = false }) {
-  if (!lesson.homework_type && !lesson.homework_description) {
+  if (!lesson.homework_enabled) {
     container.innerHTML = `<p class="muted">Для цього уроку домашнє завдання не потрібне.</p>`;
     return;
   }
@@ -16,9 +17,11 @@ export function mountHomeworkField(container, { lesson, studentId, courseId, rea
   }
 
   let files = [];
+  const requiredFormats = getRequiredHomeworkFormats(lesson);
 
   container.innerHTML = `
     ${lesson.homework_description ? `<p class="homework-description">${escapeHtml(lesson.homework_description)}</p>` : ''}
+    ${requiredFormats.length ? `<p class="muted">Обов’язково: ${requiredFormats.map(({ validationLabel }) => validationLabel).join(', ')}</p>` : ''}
     <textarea id="hw-text" rows="3" placeholder="Ваша відповідь (необов'язково, якщо додаєте лише файли)"></textarea>
     <div id="hw-files" style="margin:8px 0;"></div>
     <div style="display:flex;gap:8px;align-items:center;">
@@ -60,6 +63,20 @@ export function mountHomeworkField(container, { lesson, studentId, courseId, rea
     const textEl = container.querySelector('#hw-text');
     const text = textEl.value.trim();
     if (!text && files.length === 0) return;
+
+    const hasPhoto = files.some((file) => file.type.startsWith('image/'));
+    const hasVideo = files.some((file) => file.type.startsWith('video/'));
+    const missing = [];
+    for (const requirement of requiredFormats) {
+      const isPresent = requirement.format === 'text' ? Boolean(text) : requirement.format === 'photo' ? hasPhoto : hasVideo;
+      if (!isPresent) missing.push(requirement.validationLabel);
+    }
+    if (missing.length) {
+      statusEl.style.display = 'block';
+      statusEl.className = 'error-text';
+      statusEl.textContent = `Додайте: ${missing.join(', ')}.`;
+      return;
+    }
 
     statusEl.style.display = 'block';
     statusEl.className = '';
