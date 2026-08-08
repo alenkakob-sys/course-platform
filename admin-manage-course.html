@@ -3,22 +3,138 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Редагування курсу</title>
+<title>Редагування курсу · Адмін-панель</title>
 <link rel="stylesheet" href="css/style.css" />
 </head>
-<body>
-<div class="page">
-  <a href="admin-manage.html" class="link" style="display:block;margin-bottom:16px;">← усі курси</a>
+<body class="admin-body admin-editor-body">
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <a class="admin-brand" href="admin-manage.html"><span>AK</span><strong>ADMIN</strong></a>
+    <nav class="admin-nav" aria-label="Адмін-навігація">
+      <a class="active" href="admin-manage.html"><span aria-hidden="true">▣</span>Курси</a>
+      <a href="admin-manage-students.html"><span aria-hidden="true">♙</span>Учениці</a>
+      <a href="admin.html"><span aria-hidden="true">◌</span>Повідомлення</a>
+    </nav>
+    <button id="logout-btn" class="admin-logout" type="button">↪ <span>Вийти з акаунта</span></button>
+  </aside>
 
-  <label class="field-label">Назва курсу</label>
-  <input type="text" id="course-title" style="font-size:16px;font-weight:500;margin-bottom:16px;" />
+  <main class="admin-main admin-editor-main">
+    <header class="admin-editor-header">
+      <div class="admin-editor-heading">
+        <p><a href="admin-manage.html">Курси</a><span>/</span><span id="course-breadcrumb">Завантаження…</span></p>
+        <div><h1>Редагування курсу</h1><span id="save-status" class="admin-save-status">Завантаження…</span></div>
+      </div>
+      <div class="admin-header-actions">
+        <a id="preview-course" class="admin-secondary disabled" href="#" aria-disabled="true">◉ Переглянути як учениця</a>
+        <a class="admin-primary" href="admin-manage.html">Готово</a>
+      </div>
+    </header>
 
-  <label class="field-label">Презентація курсу (посилання для вбудовування Google Slides, необов'язково)</label>
-  <input type="text" id="presentation-url" placeholder="https://docs.google.com/presentation/d/.../embed" style="margin-bottom:24px;" />
+    <section class="admin-course-name-panel">
+      <label for="course-title">Назва курсу</label>
+      <input type="text" id="course-title" placeholder="Назва курсу" />
+    </section>
 
-  <h2 style="font-size:14px;font-weight:500;margin-bottom:8px;">Уроки</h2>
-  <div id="lessons-list"></div>
-  <button id="add-lesson" class="btn btn-dashed" style="margin-top:8px;">+ Новий урок</button>
+    <div class="admin-editor-layout">
+      <aside class="admin-lessons-panel">
+        <div class="admin-section-title"><h2>Уроки</h2><span id="lessons-count"></span></div>
+        <label class="admin-search compact"><span>⌕</span><input id="lesson-search" type="search" placeholder="Пошук уроків" /></label>
+        <div id="lessons-list" class="admin-lesson-list"></div>
+        <button id="add-lesson" class="admin-dashed" type="button">＋ Додати урок</button>
+      </aside>
+
+      <section id="lesson-editor" class="admin-lesson-editor" aria-live="polite">
+        <div id="editor-empty" class="admin-empty-state">
+          <span>▤</span><h2>Оберіть урок</h2><p>Виберіть урок у списку ліворуч або створіть новий.</p>
+        </div>
+        <div id="editor-content" hidden>
+          <div class="admin-lesson-editor-title">
+            <div><span id="editor-short-label"></span><h2 id="editor-title"></h2></div>
+            <button id="delete-lesson" class="admin-danger-link" type="button">Видалити урок</button>
+          </div>
+          <div class="admin-tabs" role="tablist">
+            <button class="active" data-tab="main" type="button">Основне</button>
+            <button data-tab="materials" type="button">Матеріали</button>
+            <button data-tab="homework" type="button">Домашнє завдання</button>
+            <button data-tab="access" type="button">Доступ</button>
+          </div>
+
+          <div class="admin-tab-panel active" data-panel="main">
+            <div class="admin-panel">
+              <h3>Основна інформація</h3>
+              <div class="admin-form-grid two">
+                <label>Назва уроку<input id="lesson-title" type="text" /></label>
+                <label>Коротка мітка<input id="lesson-short-label" type="text" placeholder="Наприклад, 7.1" /></label>
+              </div>
+              <label class="admin-field">Опис уроку<textarea id="lesson-description" rows="5" placeholder="Що учениця вивчить у цьому уроці"></textarea></label>
+              <label class="admin-field">Батьківський урок
+                <select id="lesson-parent"><option value="">Немає — основний рівень</option></select>
+                <small>Використовуйте для вкладених частин: наприклад, 7 → 7.1 → 7.2.</small>
+              </label>
+            </div>
+          </div>
+
+          <div class="admin-tab-panel" data-panel="materials">
+            <div class="admin-materials-grid">
+              <section class="admin-panel">
+                <div class="admin-section-title"><h3>Відео уроку</h3><span id="video-count"></span></div>
+                <div id="video-list" class="admin-video-list"></div>
+                <div class="admin-add-row">
+                  <input id="new-video" type="text" placeholder="YouTube-посилання або ID" />
+                  <button id="add-video" class="admin-secondary" type="button">＋ Додати</button>
+                </div>
+              </section>
+              <section class="admin-panel">
+                <h3>Презентації</h3>
+                <div class="admin-info">Загальна презентація буде доступна з кожного уроку.</div>
+                <label class="admin-field">Загальна презентація курсу
+                  <input id="presentation-url" type="url" placeholder="Посилання — до підключення R2" />
+                  <small>Зараз зберігається наявне посилання. Завантаження PDF/PPTX у R2 додамо наступним кроком.</small>
+                </label>
+                <div class="admin-upload-placeholder">
+                  <span>▧</span><strong>Презентація цього уроку</strong>
+                  <small>Місце для окремого файлу вже закладене в інтерфейсі.</small>
+                </div>
+              </section>
+            </div>
+          </div>
+
+          <div class="admin-tab-panel" data-panel="homework">
+            <section class="admin-panel">
+              <div class="admin-toggle-row">
+                <div><h3>Домашнє завдання</h3><p>Визначте, що учениця має надіслати після уроку.</p></div>
+                <label class="admin-switch"><input id="homework-enabled" type="checkbox" /><span></span></label>
+              </div>
+              <div id="homework-settings">
+                <label class="admin-field">Обов’язковий формат
+                  <select id="homework-type">
+                    <option value="text">Текст</option>
+                    <option value="photo">Фото</option>
+                    <option value="video">Відео</option>
+                  </select>
+                  <small>Поки база підтримує один обов’язковий формат. Комбінації додамо разом зі статусами перевірки.</small>
+                </label>
+                <label class="admin-field">Завдання для учениці<textarea id="homework-description" rows="6" placeholder="Опишіть, що потрібно виконати й надіслати"></textarea></label>
+              </div>
+            </section>
+          </div>
+
+          <div class="admin-tab-panel" data-panel="access">
+            <section class="admin-panel">
+              <div class="admin-section-title"><div><h3>Доступ до наступного уроку</h3><p>Правило можна буде перевизначити для кожного уроку.</p></div><span class="admin-soon">Наступний етап</span></div>
+              <div class="admin-access-options" aria-disabled="true">
+                <label><input type="radio" disabled checked /><span><strong>Вільний доступ</strong><small>Наступний урок відкритий одразу.</small></span></label>
+                <label><input type="radio" disabled /><span><strong>Після здачі ДЗ</strong><small>Відкривається одразу після повної здачі.</small></span></label>
+                <label><input type="radio" disabled /><span><strong>Після перевірки</strong><small>Ви керуєте відкриттям під час перевірки й перездачі.</small></span></label>
+              </div>
+              <div class="admin-info">Ці перемикачі активуємо після додавання правил доступу та статусів ДЗ у базу.</div>
+            </section>
+          </div>
+        </div>
+      </section>
+    </div>
+    <p id="editor-error" class="admin-alert error" hidden></p>
+  </main>
 </div>
 <script type="module" src="js/pages/admin-manage-course.js"></script>
 </body>

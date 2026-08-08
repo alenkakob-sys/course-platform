@@ -3,23 +3,49 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Учениці</title>
+<title>Учениці · Адмін-панель</title>
 <link rel="stylesheet" href="css/style.css" />
 </head>
-<body>
-<div class="page">
-  <div class="row-between" style="margin-bottom:16px;">
-    <h1 class="h1" style="margin:0;">Учениці</h1>
-    <a href="admin-manage.html" class="link">← курси</a>
-  </div>
+<body class="admin-body">
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <a class="admin-brand" href="admin-manage.html"><span>AK</span><strong>ADMIN</strong></a>
+    <nav class="admin-nav" aria-label="Адмін-навігація">
+      <a href="admin-manage.html"><span aria-hidden="true">▣</span>Курси</a>
+      <a class="active" href="admin-manage-students.html"><span aria-hidden="true">♙</span>Учениці</a>
+      <a href="admin.html"><span aria-hidden="true">◌</span>Повідомлення</a>
+    </nav>
+    <button id="logout-btn" class="admin-logout" type="button">↪ <span>Вийти з акаунта</span></button>
+  </aside>
 
-  <form id="invite-form" style="display:flex;gap:6px;margin-bottom:8px;">
-    <input type="email" id="invite-email" required placeholder="email нової учениці" style="flex:1;" />
-    <button type="submit" class="btn">Запросити</button>
-  </form>
-  <p id="invite-status" style="display:none;margin-top:-4px;margin-bottom:16px;"></p>
+  <main class="admin-main">
+    <header class="admin-page-header">
+      <div>
+        <p class="admin-eyebrow">Керування доступом</p>
+        <h1>Учениці</h1>
+        <p>Запрошуйте учениць і надавайте доступ до окремих курсів.</p>
+      </div>
+    </header>
 
-  <div id="students-list"></div>
+    <section class="admin-panel admin-invite-panel">
+      <div>
+        <h2>Запросити ученицю</h2>
+        <p>На пошту прийде персональне посилання для входу без пароля.</p>
+      </div>
+      <form id="invite-form">
+        <input type="email" id="invite-email" required placeholder="email@example.com" autocomplete="email" />
+        <button type="submit" class="admin-primary">Надіслати запрошення</button>
+      </form>
+      <p id="invite-status" hidden></p>
+    </section>
+
+    <section class="admin-toolbar">
+      <label class="admin-search"><span>⌕</span><input id="student-search" type="search" placeholder="Пошук за ім’ям або поштою" /></label>
+      <span id="student-count" class="admin-count"></span>
+    </section>
+    <p id="students-error" class="admin-alert error" hidden></p>
+    <section id="students-list" class="admin-students-list" aria-live="polite"></section>
+  </main>
 </div>
 <script type="module" src="js/pages/admin-manage-students.js"></script>
 </body>

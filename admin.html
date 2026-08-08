@@ -3,17 +3,38 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Адмінка</title>
+<title>Повідомлення · Адмін-панель</title>
 <link rel="stylesheet" href="css/style.css" />
 </head>
-<body>
-<div class="page">
-  <div class="row-between" style="margin-bottom:4px;">
-    <h1 class="h1" style="margin:0;">Учениці</h1>
-    <button id="logout-btn" class="link" style="background:none;border:none;">Вийти з акаунта</button>
-  </div>
-  <a href="admin-manage.html" class="link" style="display:block;margin-bottom:16px;">Керувати курсами й уроками →</a>
-  <div id="student-list"></div>
+<body class="admin-body">
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <a class="admin-brand" href="admin-manage.html"><span>AK</span><strong>ADMIN</strong></a>
+    <nav class="admin-nav" aria-label="Адмін-навігація">
+      <a href="admin-manage.html"><span aria-hidden="true">▣</span>Курси</a>
+      <a href="admin-manage-students.html"><span aria-hidden="true">♙</span>Учениці</a>
+      <a class="active" href="admin.html"><span aria-hidden="true">◌</span>Повідомлення</a>
+    </nav>
+    <button id="logout-btn" class="admin-logout" type="button">↪ <span>Вийти з акаунта</span></button>
+  </aside>
+
+  <main class="admin-main">
+    <header class="admin-page-header">
+      <div>
+        <p class="admin-eyebrow">Чати курсів</p>
+        <h1>Повідомлення</h1>
+        <p>Окрема кімната для кожної учениці та курсу.</p>
+      </div>
+      <span id="unread-total" class="admin-unread-total" hidden></span>
+    </header>
+
+    <section class="admin-toolbar">
+      <label class="admin-search"><span>⌕</span><input id="message-search" type="search" placeholder="Пошук учениці або курсу" /></label>
+      <label class="admin-filter"><input id="unread-only" type="checkbox" /> Тільки непрочитані</label>
+    </section>
+    <p id="messages-error" class="admin-alert error" hidden></p>
+    <section id="student-list" class="admin-message-groups" aria-live="polite"></section>
+  </main>
 </div>
 <script type="module" src="js/pages/admin.js"></script>
 </body>

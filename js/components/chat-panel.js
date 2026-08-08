@@ -4,8 +4,11 @@ import { uploadPrivateFile, openPrivateFile, isPrivateFileRef } from '../r2-file
 // Монтує незалежний модуль чату в container. lessons — масив уроків курсу.
 // Перемикач уроків тут СВІЙ, окремий від відео вище (п.10 ТЗ):
 // можна дивитись відео уроку 7, маючи відкритим чат уроку 1.
-export function mountChatPanel(container, { courseId, studentId, lessons, viewerRole }) {
-  const state = { chatLessonId: 'general', threadId: null, messages: [], unread: {} };
+export function mountChatPanel(container, { courseId, studentId, lessons, viewerRole, initialLessonId = 'general' }) {
+  const validInitialLesson = initialLessonId === 'general' || lessons.some((lesson) => lesson.id === initialLessonId)
+    ? initialLessonId
+    : 'general';
+  const state = { chatLessonId: validInitialLesson, threadId: null, messages: [], unread: {} };
   let unsubscribe = () => {};
 
   container.innerHTML = `
@@ -179,7 +182,7 @@ export function mountChatPanel(container, { courseId, studentId, lessons, viewer
   draftEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleSend(); });
   container.querySelector('#chat-attach').addEventListener('change', handleAttach);
 
-  openThread('general');
+  openThread(validInitialLesson);
 
   return () => unsubscribe(); // викликати при демонтажі, якщо колись знадобиться
 }
