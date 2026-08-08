@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Редагування курсу · Адмін-панель</title>
-<link rel="stylesheet" href="css/style.css?v=20260808-3" />
+<link rel="stylesheet" href="css/style.css?v=20260808-5" />
 </head>
 <body class="admin-body admin-editor-body">
 <div class="admin-shell" id="admin-shell">
@@ -25,15 +25,15 @@
     <header class="admin-compact-header">
       <div class="admin-course-path">
         <a href="admin-manage.html">Курси</a><span>/</span>
+        <input id="course-order" type="number" min="1" step="1" aria-label="Номер курсу" title="Номер курсу" />
         <input id="course-title" type="text" aria-label="Назва курсу" />
-        <span id="save-status" class="admin-save-status">Завантаження…</span>
+        <button id="course-settings-toggle" class="admin-presentation-button" type="button" aria-label="Загальна презентація" title="Загальна презентація">▧</button>
       </div>
       <div class="admin-view-switch" aria-label="Режим редактора">
         <button id="single-mode" class="active" type="button">Один урок</button>
         <button id="table-mode" type="button">Таблиця курсу</button>
       </div>
       <div class="admin-header-actions">
-        <button id="course-settings-toggle" class="admin-icon-button" type="button" aria-label="Налаштування курсу" title="Налаштування курсу">⚙</button>
         <a id="preview-course" class="admin-secondary disabled" href="#" aria-disabled="true">◉ Переглянути як учениця</a>
         <a id="finish-editing" class="admin-primary" href="admin-manage.html" title="Зберегти зміни й закрити">Готово</a>
       </div>
@@ -76,12 +76,12 @@
               <div id="video-list" class="admin-video-list"></div>
               <div class="admin-add-row">
                 <input id="new-video" type="text" placeholder="YouTube-посилання або ID" />
-                <button id="add-video" class="admin-secondary" type="button">＋ Відео</button>
-                  <button class="admin-secondary" type="button" disabled title="Підключимо до R2">⇧ Файл</button>
+                <button id="add-video" class="admin-secondary admin-add-icon" type="button" title="Додати YouTube-відео">＋</button>
+                <button class="admin-secondary" type="button" disabled title="Підключимо до R2">⇧ Файл</button>
                 </div>
               </div>
               <div class="admin-material-subsection">
-                <h4>Презентація уроку</h4>
+                <h4>Презентація</h4>
                 <div class="admin-add-row">
                   <input id="lesson-presentation-url" type="url" placeholder="Посилання" disabled />
                   <button class="admin-secondary" type="button" disabled title="Підключимо до R2">⇧ Файл</button>
@@ -149,6 +149,6 @@
   </section>
 </dialog>
 
-<script type="module" src="js/pages/admin-manage-course.js?v=20260808-3"></script>
+<script type="module" src="js/pages/admin-manage-course.js?v=20260808-5"></script>
 </body>
 </html>

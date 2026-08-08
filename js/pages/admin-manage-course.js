@@ -12,7 +12,7 @@ wireLogoutButton(document.getElementById('logout-btn'));
 
 const elements = {
   courseTitle: document.getElementById('course-title'),
-  saveStatus: document.getElementById('save-status'),
+  courseOrder: document.getElementById('course-order'),
   preview: document.getElementById('preview-course'),
   done: document.getElementById('finish-editing'),
   shell: document.getElementById('admin-shell'),
@@ -65,7 +65,7 @@ const pendingSaves = new Map();
 async function load({ keepSelection = true } = {}) {
   setSaveStatus('Завантаження…', 'saving');
   const [{ data: courseData, error: courseError }, { data: presentation }, { data: lessonRows, error: lessonsError }, { data: previewAccess }] = await Promise.all([
-    supabase.from('courses').select('id, title').eq('id', courseId).single(),
+    supabase.from('courses').select('id, title, order_index').eq('id', courseId).single(),
     supabase.from('presentations').select('embed_url').eq('course_id', courseId).maybeSingle(),
     supabase
       .from('lessons')
@@ -86,6 +86,7 @@ async function load({ keepSelection = true } = {}) {
   if (!keepSelection || !lessons.some((lesson) => lesson.id === selectedLessonId)) selectedLessonId = lessons[0]?.id || null;
 
   elements.courseTitle.value = courseState.title;
+  elements.courseOrder.value = String(courseState.order_index + 1);
   elements.presentationUrl.value = courseState.presentationUrl;
   if (previewAccess?.student_id) {
     elements.preview.href = `course.html?course=${courseId}&student=${previewAccess.student_id}&admin=1`;
@@ -350,6 +351,7 @@ async function runSave(task) {
 }
 
 function setSaveStatus(text, className = '') {
+  if (!elements.saveStatus) return;
   elements.saveStatus.textContent = text;
   elements.saveStatus.className = `admin-save-status${className ? ` ${className}` : ''}`;
 }
@@ -358,6 +360,46 @@ elements.courseTitle.addEventListener('input', () => {
   const value = elements.courseTitle.value;
   courseState.title = value;
   scheduleSave('course-title', () => supabase.from('courses').update({ title: value.trim() || 'Без назви' }).eq('id', courseId));
+});
+
+elements.courseOrder.addEventListener('change', async () => {
+  const requestedPosition = Number.parseInt(elements.courseOrder.value, 10);
+  if (!Number.isInteger(requestedPosition) || requestedPosition < 1) {
+    elements.courseOrder.value = String(courseState.order_index + 1);
+    return;
+  }
+
+  await flushPending();
+  const { data: courseRows, error } = await supabase
+    .from('courses')
+    .select('id, order_index')
+    .order('order_index');
+  if (error || !courseRows) {
+    showError('Не вдалося змінити номер курсу.');
+    elements.courseOrder.value = String(courseState.order_index + 1);
+    return;
+  }
+
+  const orderedCourses = [...courseRows];
+  const currentIndex = orderedCourses.findIndex((item) => item.id === courseId);
+  const targetIndex = Math.min(requestedPosition - 1, orderedCourses.length - 1);
+  if (currentIndex < 0 || currentIndex === targetIndex) {
+    elements.courseOrder.value = String((currentIndex < 0 ? courseState.order_index : targetIndex) + 1);
+    return;
+  }
+
+  const [movedCourse] = orderedCourses.splice(currentIndex, 1);
+  orderedCourses.splice(targetIndex, 0, movedCourse);
+  orderedCourses.forEach((item, index) => { item.order_index = index; });
+  courseState.order_index = targetIndex;
+  elements.courseOrder.value = String(targetIndex + 1);
+
+  await runSave(async () => {
+    const updates = await Promise.all(orderedCourses.map((item) =>
+      supabase.from('courses').update({ order_index: item.order_index }).eq('id', item.id)
+    ));
+    return { error: updates.find((result) => result.error)?.error || null };
+  });
 });
 
 elements.presentationUrl.addEventListener('input', () => {

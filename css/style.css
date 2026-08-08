@@ -170,6 +170,7 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
 .admin-body select { font: inherit; }
 .admin-body input[type="text"],
 .admin-body input[type="email"],
+.admin-body input[type="number"],
 .admin-body input[type="url"],
 .admin-body input[type="search"],
 .admin-body textarea,
@@ -192,6 +193,7 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
 }
 .admin-body input::placeholder,
 .admin-body textarea::placeholder { color: #747c84; }
+.admin-body textarea { resize: vertical; }
 
 .admin-shell { min-height: 100vh; display: grid; grid-template-columns: 208px minmax(0, 1fr); }
 .admin-sidebar {
@@ -381,6 +383,7 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
 .admin-add-row { display: flex; gap: 7px; }
 .admin-add-row input { min-width: 0; }
 .admin-add-row button { flex: 0 0 auto; }
+.admin-add-row .admin-add-icon { width: 44px; padding-inline: 0; font-size: 21px; }
 .admin-info { border-radius: 7px; background: var(--admin-blue); color: var(--admin-blue-text); padding: 10px 12px; font-size: 11px; line-height: 1.45; }
 .admin-upload-placeholder { min-height: 102px; border: 1px dashed #687078; border-radius: 8px; margin-top: 17px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #d6dadd; text-align: center; padding: 12px; }
 .admin-upload-placeholder span { color: var(--admin-gold); font-size: 22px; }
@@ -451,7 +454,7 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
 
 /* Редактор курсу: компактний режим уроку + табличний режим */
 .admin-shell { transition: grid-template-columns .2s ease; }
-.admin-shell.sidebar-collapsed { grid-template-columns: 68px minmax(0, 1fr); }
+.admin-shell.sidebar-collapsed { grid-template-columns: 76px minmax(0, 1fr); }
 .admin-brand-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
 .admin-brand-row .admin-brand { min-width: 0; }
 .admin-sidebar-toggle {
@@ -459,15 +462,17 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
   border-radius: 8px; background: transparent; color: var(--admin-muted); cursor: pointer;
 }
 .admin-sidebar-toggle:hover { color: #fff; border-color: #697179; }
-.admin-shell.sidebar-collapsed .admin-sidebar { padding-inline: 9px; }
-.admin-shell.sidebar-collapsed .admin-brand-row { display: grid; justify-items: center; }
-.admin-shell.sidebar-collapsed .admin-brand { margin: 0 0 7px; }
+.admin-shell.sidebar-collapsed .admin-sidebar { padding: 18px 10px; }
+.admin-shell.sidebar-collapsed .admin-brand-row { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.admin-shell.sidebar-collapsed .admin-brand { width: 48px; justify-content: center; margin: 0; }
+.admin-shell.sidebar-collapsed .admin-sidebar-toggle { flex: 0 0 40px; width: 48px; height: 40px; }
 .admin-shell.sidebar-collapsed .admin-brand strong,
 .admin-shell.sidebar-collapsed .admin-nav b,
 .admin-shell.sidebar-collapsed .admin-logout span { display: none; }
-.admin-shell.sidebar-collapsed .admin-nav a { justify-content: center; padding-inline: 6px; }
+.admin-shell.sidebar-collapsed .admin-nav { gap: 10px; margin-top: 12px; }
+.admin-shell.sidebar-collapsed .admin-nav a { width: 48px; min-height: 48px; justify-content: center; padding: 0; }
 .admin-shell.sidebar-collapsed .admin-nav a span { width: auto; }
-.admin-shell.sidebar-collapsed .admin-logout { text-align: center; padding-inline: 6px; }
+.admin-shell.sidebar-collapsed .admin-logout { width: 48px; min-height: 48px; text-align: center; padding: 0; }
 
 .admin-compact-header {
   display: grid; grid-template-columns: minmax(260px, 1fr) auto auto; align-items: center;
@@ -481,6 +486,17 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
   background: transparent; color: var(--admin-text); font-size: 17px; font-weight: 700;
 }
 .admin-course-path #course-title:hover { background: rgba(255,255,255,.04); }
+.admin-course-path #course-order {
+  width: 42px; min-width: 42px; border: 0; border-radius: 5px; padding: 7px 3px;
+  background: transparent; color: var(--admin-gold); font-weight: 700; text-align: center;
+}
+.admin-course-path #course-order:hover,
+.admin-course-path #course-order:focus { background: rgba(255,255,255,.06); }
+.admin-presentation-button {
+  width: 38px; height: 38px; flex: 0 0 38px; border: 1px solid var(--admin-border); border-radius: 8px;
+  background: transparent; color: var(--admin-gold); font-size: 19px; cursor: pointer;
+}
+.admin-presentation-button:hover { background: var(--admin-gold-soft); }
 .admin-view-switch,
 .admin-column-filters { display: flex; padding: 3px; border: 1px solid var(--admin-border); border-radius: 9px; background: #1b1f22; }
 .admin-view-switch button,
@@ -551,8 +567,6 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
 .lesson-identity-grid input,
 .lesson-identity-grid select { height: 54px; margin-top: 6px; }
 
-.admin-icon-button { width: 44px; min-height: 44px; border: 1px solid #50575e; border-radius: 8px; background: transparent; color: #e6e8ea; cursor: pointer; }
-.admin-icon-button:hover { background: #2b3035; }
 .admin-course-settings { width: min(520px, calc(100vw - 28px)); border: 1px solid var(--admin-border); border-radius: 12px; background: #202428; color: var(--admin-text); padding: 20px; box-shadow: 0 30px 90px rgba(0,0,0,.55); }
 .admin-course-settings::backdrop { background: rgba(8,10,12,.74); backdrop-filter: blur(3px); }
 .admin-course-settings section { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--admin-border); }
