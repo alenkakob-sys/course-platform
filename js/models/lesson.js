@@ -15,6 +15,9 @@
  * @property {boolean} homework_require_video
  * @property {string} homework_description
  * @property {string} presentation_url
+ * @property {string} presentation_file_key
+ * @property {string} presentation_file_name
+ * @property {string} presentation_file_content_type
  * @property {NextLessonAccessRule} next_lesson_access_rule
  * @property {number} next_lesson_delay_hours
  * @property {number} next_lesson_delay_days
@@ -50,12 +53,15 @@ export const ADMIN_LESSON_SELECT = `
   homework_require_video,
   homework_description,
   presentation_url,
+  presentation_file_key,
+  presentation_file_name,
+  presentation_file_content_type,
   next_lesson_access_rule,
   next_lesson_delay_hours,
   next_lesson_delay_days,
   next_lesson_unlock_time,
   order_index,
-  videos(id, youtube_id, title, order_index)
+  videos(id, youtube_id, title, source_type, file_key, file_name, file_content_type, order_index)
 `;
 
 export const STUDENT_LESSON_SELECT = `
@@ -71,12 +77,15 @@ export const STUDENT_LESSON_SELECT = `
   homework_require_video,
   homework_description,
   presentation_url,
+  presentation_file_key,
+  presentation_file_name,
+  presentation_file_content_type,
   next_lesson_access_rule,
   next_lesson_delay_hours,
   next_lesson_delay_days,
   next_lesson_unlock_time,
   order_index,
-  videos(youtube_id, title, order_index)
+  videos(youtube_id, title, source_type, file_key, file_name, file_content_type, order_index)
 `;
 
 /** @param {Object} row @returns {Lesson} */
@@ -92,6 +101,9 @@ export function normalizeLesson(row) {
     homework_require_video: Boolean(row.homework_require_video),
     homework_description: row.homework_description || '',
     presentation_url: row.presentation_url || '',
+    presentation_file_key: row.presentation_file_key || '',
+    presentation_file_name: row.presentation_file_name || '',
+    presentation_file_content_type: row.presentation_file_content_type || '',
     next_lesson_access_rule: NEXT_LESSON_ACCESS_RULES.some(({ value }) => value === row.next_lesson_access_rule)
       ? row.next_lesson_access_rule
       : 'free',

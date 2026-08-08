@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Учениці · Адмін-панель</title>
-<link rel="stylesheet" href="css/style.css?v=20260808-2" />
+<link rel="stylesheet" href="css/style.css?v=20260808-7" />
 </head>
 <body class="admin-body">
 <div class="admin-shell">
@@ -23,18 +23,19 @@
       <div>
         <p class="admin-eyebrow">Керування доступом</p>
         <h1>Учениці</h1>
-        <p>Запрошуйте учениць і надавайте доступ до окремих курсів.</p>
+        <p>Надавайте доступ до окремих курсів.</p>
       </div>
     </header>
 
     <section class="admin-panel admin-invite-panel">
       <div>
-        <h2>Запросити ученицю</h2>
-        <p>На пошту прийде персональне посилання для входу без пароля.</p>
+        <h2>Додати ученицю</h2>
+        <p>Лист не надсилається. Доступ з’явиться після її першого входу через Google.</p>
       </div>
       <form id="invite-form">
         <input type="email" id="invite-email" required placeholder="email@example.com" autocomplete="email" />
-        <button type="submit" class="admin-primary">Надіслати запрошення</button>
+        <div id="pending-course-options" class="admin-access-list"></div>
+        <button type="submit" class="admin-primary">Зберегти доступ</button>
       </form>
       <p id="invite-status" hidden></p>
     </section>
@@ -47,6 +48,6 @@
     <section id="students-list" class="admin-students-list" aria-live="polite"></section>
   </main>
 </div>
-<script type="module" src="js/pages/admin-manage-students.js?v=20260808-2"></script>
+<script type="module" src="js/pages/admin-manage-students.js?v=20260808-7"></script>
 </body>
 </html>

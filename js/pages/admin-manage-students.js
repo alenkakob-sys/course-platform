@@ -1,6 +1,5 @@
 import { supabase } from '../supabaseClient.js';
 import { requireAdmin, wireLogoutButton } from '../auth.js';
-import { FUNCTIONS_URL } from '../config.js';
 
 const auth = await requireAdmin();
 if (!auth) throw new Error('not admin');
@@ -12,6 +11,7 @@ const countEl = document.getElementById('student-count');
 const searchEl = document.getElementById('student-search');
 const errorEl = document.getElementById('students-error');
 const statusEl = document.getElementById('invite-status');
+const pendingCourseOptionsEl = document.getElementById('pending-course-options');
 
 let students = [];
 let courses = [];
@@ -37,7 +37,22 @@ async function load() {
     if (!access[row.student_id]) access[row.student_id] = new Set();
     access[row.student_id].add(row.course_id);
   });
+  renderPendingCourseOptions();
   render();
+}
+
+function renderPendingCourseOptions() {
+  pendingCourseOptionsEl.innerHTML = '';
+  if (!courses.length) {
+    pendingCourseOptionsEl.textContent = 'Спочатку створіть курс.';
+    return;
+  }
+  for (const course of courses) {
+    const label = document.createElement('label');
+    label.className = 'admin-course-check';
+    label.innerHTML = `<input type="checkbox" value="${course.id}" checked /> <span>${escapeHtml(course.title)}</span>`;
+    pendingCourseOptionsEl.appendChild(label);
+  }
 }
 
 function render() {
@@ -49,7 +64,7 @@ function render() {
   listEl.innerHTML = '';
 
   if (!filtered.length) {
-    listEl.innerHTML = `<div class="admin-empty-card">${query ? 'Нічого не знайдено.' : 'Учениць ще немає. Надішліть перше запрошення.'}</div>`;
+    listEl.innerHTML = `<div class="admin-empty-card">${query ? 'Нічого не знайдено.' : 'Учениць ще немає. Додайте email для першого входу через Google.'}</div>`;
     return;
   }
 
@@ -108,22 +123,21 @@ document.getElementById('invite-form').addEventListener('submit', async (event) 
   const submitButton = event.currentTarget.querySelector('button[type="submit"]');
   statusEl.hidden = false;
   statusEl.className = '';
-  statusEl.textContent = 'Надсилаємо запрошення…';
+  statusEl.textContent = 'Зберігаємо доступ…';
   submitButton.disabled = true;
 
   try {
-    const response = await fetch(`${FUNCTIONS_URL}/invite-student`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${auth.session.access_token}`,
-      },
-      body: JSON.stringify({ email: emailInput.value.trim() }),
-    });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(result.error || 'Не вдалося надіслати запрошення');
+    const email = emailInput.value.trim().toLocaleLowerCase('uk');
+    const courseIds = [...pendingCourseOptionsEl.querySelectorAll('input:checked')].map((input) => input.value);
+    if (!courseIds.length) throw new Error('Оберіть хоча б один курс.');
+    const { error: pendingError } = await supabase.from('pending_students').upsert({ email });
+    if (pendingError) throw pendingError;
+    const { error: clearError } = await supabase.from('pending_course_access').delete().eq('email', email);
+    if (clearError) throw clearError;
+    const { error: accessError } = await supabase.from('pending_course_access').insert(courseIds.map((course_id) => ({ email, course_id })));
+    if (accessError) throw accessError;
     statusEl.className = 'admin-alert success';
-    statusEl.textContent = 'Запрошення надіслано ✓';
+    statusEl.textContent = 'Доступ збережено ✓ лист не надсилався';
     emailInput.value = '';
     await load();
   } catch (error) {

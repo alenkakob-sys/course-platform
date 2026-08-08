@@ -530,7 +530,7 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
 .admin-table-videos { display: flex; flex-wrap: wrap; gap: 5px; min-height: 28px; }
 .admin-video-chip { max-width: 100%; padding: 6px 8px; border-radius: 6px; background: #30363b; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .admin-table-empty { color: #7f878e; font-size: 11px; }
-.admin-table-add-video { display: grid; grid-template-columns: minmax(0,1fr) 32px; gap: 5px; margin-top: 7px; }
+.admin-table-add-video { display: grid; grid-template-columns: minmax(0,1fr) 32px 36px; gap: 5px; margin-top: 7px; }
 .admin-table-add-video button { margin-top: 4px; border: 1px solid var(--admin-border); border-radius: 6px; background: transparent; color: var(--admin-gold); cursor: pointer; }
 .admin-table-presentation { display: grid; grid-template-columns: minmax(0,1fr) 36px; align-items: end; gap: 6px; margin-top: 9px; padding-top: 8px; border-top: 1px solid #363c42; color: var(--admin-muted); font-size: 11px; }
 .admin-table-subsection + .admin-table-subsection { margin-top: 10px; padding-top: 10px; border-top: 1px solid #3a4147; }
@@ -564,6 +564,9 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
 .admin-access-timing { display: grid; gap: 8px; margin-top: 10px; }
 .admin-access-timing label { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px; color: var(--admin-muted); font-size: 12px; }
 .admin-access-timing input { width: 106px; margin: 0; }
+.admin-file-name { margin: 8px 0 0; color: var(--admin-muted); font-size: 11px; overflow-wrap: anywhere; }
+.admin-file-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 6px; background: var(--admin-gold-soft); color: var(--admin-gold); }
+.lesson-circle.locked { opacity: .48; cursor: not-allowed; }
 
 .admin-course-settings { width: min(520px, calc(100vw - 28px)); border: 1px solid var(--admin-border); border-radius: 12px; background: #202428; color: var(--admin-text); padding: 20px; box-shadow: 0 30px 90px rgba(0,0,0,.55); }
 .admin-course-settings::backdrop { background: rgba(8,10,12,.74); backdrop-filter: blur(3px); }

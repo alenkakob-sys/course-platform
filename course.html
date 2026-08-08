@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Курс</title>
-<link rel="stylesheet" href="css/style.css?v=20260808-2" />
+<link rel="stylesheet" href="css/style.css?v=20260808-7" />
 </head>
 <body>
 <div class="page">
@@ -18,6 +18,7 @@
 
   <div id="presentation-block" style="display:none;margin-bottom:12px;">
     <a id="presentation-link" target="_blank" rel="noreferrer" style="display:block;padding:10px 12px;background:var(--surface-2);border-radius:8px;font-size:13px;text-decoration:none;">Презентація курсу →</a>
+    <button id="presentation-download" class="icon-btn" type="button" style="margin-top:6px;display:none;">Завантажити</button>
   </div>
 
   <div class="lesson-strip" id="lesson-strip"></div>
@@ -26,6 +27,11 @@
     <div class="video-box" id="video-box"></div>
     <div class="video-selector" id="video-selector" hidden></div>
     <p class="muted" style="font-size:11px;margin:6px 0 16px;">Розгортається на весь екран при повороті екрана</p>
+
+    <div id="lesson-presentation-block" style="display:none;margin:0 0 12px;">
+      <a id="lesson-presentation-link" target="_blank" rel="noreferrer" style="display:block;padding:10px 12px;background:var(--surface-2);border-radius:8px;font-size:13px;text-decoration:none;">Презентація уроку →</a>
+      <button id="lesson-presentation-download" class="icon-btn" type="button" style="margin-top:6px;display:none;">Завантажити</button>
+    </div>
 
     <details class="accordion">
       <summary>Опис уроку</summary>
@@ -44,6 +50,6 @@
   </div>
 </div>
 
-<script type="module" src="js/pages/course.js?v=20260808-3"></script>
+<script type="module" src="js/pages/course.js?v=20260808-7"></script>
 </body>
 </html>

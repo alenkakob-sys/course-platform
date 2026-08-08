@@ -1,6 +1,7 @@
 import { supabase } from '../supabaseClient.js';
 import { requireAdmin, wireLogoutButton } from '../auth.js';
 import { ADMIN_LESSON_SELECT, HOMEWORK_REQUIREMENTS, NEXT_LESSON_ACCESS_RULES, normalizeLesson } from '../models/lesson.js';
+import { uploadCourseAsset } from '../course-assets.js';
 
 const urlParams = new URLSearchParams(window.location.search);
 const courseId = urlParams.get('course');
@@ -33,10 +34,13 @@ const elements = {
   lessonDescription: document.getElementById('lesson-description'),
   lessonParent: document.getElementById('lesson-parent'),
   lessonPresentationUrl: document.getElementById('lesson-presentation-url'),
+  lessonPresentationFileButton: document.getElementById('lesson-presentation-file-button'),
+  lessonPresentationFileName: document.getElementById('lesson-presentation-file-name'),
   presentationUrl: document.getElementById('presentation-url'),
   videoCount: document.getElementById('video-count'),
   videoList: document.getElementById('video-list'),
   newVideo: document.getElementById('new-video'),
+  addVideoFile: document.getElementById('add-video-file'),
   homeworkEnabled: document.getElementById('homework-enabled'),
   homeworkSettings: document.getElementById('homework-settings'),
   homeworkDescription: document.getElementById('homework-description'),
@@ -47,7 +51,8 @@ const elements = {
   accessDelayDays: document.getElementById('access-delay-days'),
   accessUnlockTime: document.getElementById('access-unlock-time'),
   error: document.getElementById('editor-error'),
-  presentationFile: document.getElementById('course-presentation-file'),
+  assetFile: document.getElementById('course-asset-file'),
+  coursePresentationFileName: document.getElementById('course-presentation-file-name'),
   presentationNote: document.getElementById('presentation-note'),
   courseSettings: document.getElementById('course-settings'),
   courseSettingsToggle: document.getElementById('course-settings-toggle'),
@@ -67,12 +72,13 @@ let saveSequence = 0;
 let editorMode = 'single';
 let sidebarManuallyCollapsed = localStorage.getItem('admin-sidebar-collapsed') === '1';
 const pendingSaves = new Map();
+let pendingAssetTarget = null;
 
 async function load({ keepSelection = true } = {}) {
   setSaveStatus('Завантаження…', 'saving');
   const [{ data: courseData, error: courseError }, { data: presentation }, { data: lessonRows, error: lessonsError }, { data: previewAccess }] = await Promise.all([
     supabase.from('courses').select('id, title, short_label').eq('id', courseId).single(),
-    supabase.from('presentations').select('embed_url').eq('course_id', courseId).maybeSingle(),
+    supabase.from('presentations').select('embed_url, file_key, file_name, file_content_type').eq('course_id', courseId).maybeSingle(),
     supabase
       .from('lessons')
       .select(ADMIN_LESSON_SELECT)
@@ -87,13 +93,20 @@ async function load({ keepSelection = true } = {}) {
     return;
   }
 
-  courseState = { ...courseData, presentationUrl: presentation?.embed_url || '' };
+  courseState = {
+    ...courseData,
+    presentationUrl: presentation?.embed_url || '',
+    presentationFileKey: presentation?.file_key || '',
+    presentationFileName: presentation?.file_name || '',
+    presentationFileContentType: presentation?.file_content_type || '',
+  };
   lessons = (lessonRows || []).map(normalizeLesson);
   if (!keepSelection || !lessons.some((lesson) => lesson.id === selectedLessonId)) selectedLessonId = lessons[0]?.id || null;
 
   elements.courseTitle.value = courseState.title;
   elements.courseShortLabel.value = courseState.short_label || '';
   elements.presentationUrl.value = courseState.presentationUrl;
+  renderCoursePresentationFile();
   if (previewAccess?.student_id) {
     elements.preview.href = `course.html?course=${courseId}&student=${previewAccess.student_id}&admin=1`;
     elements.preview.classList.remove('disabled');
@@ -177,11 +190,24 @@ function renderEditor() {
   for (const [field, input] of homeworkRequirementInputs) input.checked = lesson[field];
   elements.homeworkDescription.value = lesson.homework_description || '';
   elements.lessonPresentationUrl.value = lesson.presentation_url || '';
+  renderLessonPresentationFile(lesson);
   elements.accessRule.value = lesson.next_lesson_access_rule;
   elements.accessDelayHours.value = String(lesson.next_lesson_delay_hours);
   elements.accessDelayDays.value = String(lesson.next_lesson_delay_days);
   elements.accessUnlockTime.value = lesson.next_lesson_unlock_time;
   renderAccessTiming(lesson);
+}
+
+function renderCoursePresentationFile() {
+  const hasFile = Boolean(courseState?.presentationFileKey);
+  elements.coursePresentationFileName.hidden = !hasFile;
+  elements.coursePresentationFileName.textContent = hasFile ? `Файл: ${courseState.presentationFileName}` : '';
+}
+
+function renderLessonPresentationFile(lesson) {
+  const hasFile = Boolean(lesson.presentation_file_key);
+  elements.lessonPresentationFileName.hidden = !hasFile;
+  elements.lessonPresentationFileName.textContent = hasFile ? `Файл: ${lesson.presentation_file_name}` : '';
 }
 
 function renderComparison() {
@@ -206,8 +232,8 @@ function renderComparison() {
       </div>
       <div class="admin-comparison-section">
         <div class="admin-table-videos"></div>
-        <div class="admin-table-add-video"><input type="text" data-table-new-video placeholder="YouTube-посилання" /><button type="button">＋</button></div>
-        <div class="admin-table-presentation"><label>Презентація<input type="url" data-table-field="presentation_url" placeholder="Посилання" value="${escapeAttribute(lesson.presentation_url || '')}" /></label><button class="admin-secondary admin-upload-icon" type="button" disabled title="Завантаження презентації підключимо до R2">⇧</button></div>
+        <div class="admin-table-add-video"><input type="text" data-table-new-video placeholder="YouTube-посилання" /><button type="button">＋</button><button class="admin-secondary admin-upload-icon" data-table-upload-video type="button" title="Завантажити відеофайл">⇧</button></div>
+        <div class="admin-table-presentation"><label>Презентація<input type="url" data-table-field="presentation_url" placeholder="Посилання" value="${escapeAttribute(lesson.presentation_url || '')}" /></label><button class="admin-secondary admin-upload-icon" data-table-upload-presentation type="button" title="Завантажити презентацію">⇧</button></div>
       </div>
       <div class="admin-comparison-section">
         <div class="admin-table-subsection">
@@ -289,6 +315,8 @@ function renderComparison() {
     addVideoInput.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') { event.preventDefault(); addVideoToLesson(lesson, addVideoInput); }
     });
+    card.querySelector('[data-table-upload-video]').addEventListener('click', () => chooseAsset({ assetType: 'lesson-video', lessonId: lesson.id }));
+    card.querySelector('[data-table-upload-presentation]').addEventListener('click', () => chooseAsset({ assetType: 'lesson-presentation', lessonId: lesson.id }));
 
     elements.comparisonBody.appendChild(card);
   }
@@ -315,9 +343,10 @@ function renderVideos(lesson) {
   lesson.videos.forEach((video, index) => {
     const row = document.createElement('article');
     row.className = 'admin-video-item';
+    const isUploadedFile = video.source_type === 'r2';
     row.innerHTML = `
-      <img src="https://i.ytimg.com/vi/${encodeURIComponent(video.youtube_id)}/mqdefault.jpg" alt="" />
-      <div><h4>${escapeHtml(video.title || `Відео ${index + 1}`)}</h4><p>${escapeHtml(video.youtube_id)}</p></div>
+      ${isUploadedFile ? '<span class="admin-file-icon" aria-hidden="true">▶</span>' : `<img src="https://i.ytimg.com/vi/${encodeURIComponent(video.youtube_id)}/mqdefault.jpg" alt="" />`}
+      <div><h4>${escapeHtml(video.title || `Відео ${index + 1}`)}</h4><p>${escapeHtml(isUploadedFile ? 'Завантажений файл' : video.youtube_id)}</p></div>
       <div class="admin-video-actions">
         <button data-action="up" title="Вище" ${index === 0 ? 'disabled' : ''}>↑</button>
         <button data-action="down" title="Нижче" ${index === lesson.videos.length - 1 ? 'disabled' : ''}>↓</button>
@@ -404,8 +433,22 @@ elements.presentationUrl.addEventListener('input', () => {
   const value = elements.presentationUrl.value.trim();
   courseState.presentationUrl = value;
   scheduleSave('course-presentation', () => value
-    ? supabase.from('presentations').upsert({ course_id: courseId, embed_url: value })
-    : supabase.from('presentations').delete().eq('course_id', courseId));
+    ? supabase.from('presentations').upsert({
+      course_id: courseId,
+      embed_url: value,
+      file_key: courseState.presentationFileKey,
+      file_name: courseState.presentationFileName,
+      file_content_type: courseState.presentationFileContentType,
+    })
+    : courseState.presentationFileKey
+      ? supabase.from('presentations').upsert({
+        course_id: courseId,
+        embed_url: '',
+        file_key: courseState.presentationFileKey,
+        file_name: courseState.presentationFileName,
+        file_content_type: courseState.presentationFileContentType,
+      })
+      : supabase.from('presentations').delete().eq('course_id', courseId));
 });
 
 function bindLessonText(element, field, { refreshTitles = false } = {}) {
@@ -656,16 +699,101 @@ elements.toggleSidebar.addEventListener('click', () => {
   applySidebarState();
 });
 
-document.getElementById('choose-course-presentation').addEventListener('click', () => elements.presentationFile.click());
+function chooseAsset(target) {
+  pendingAssetTarget = target;
+  elements.assetFile.accept = target.assetType === 'lesson-video' ? 'video/*' : '.pdf,.ppt,.pptx,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation';
+  elements.assetFile.value = '';
+  elements.assetFile.click();
+}
+
+async function uploadSelectedAsset(file) {
+  const target = pendingAssetTarget;
+  pendingAssetTarget = null;
+  if (!target || !file) return;
+  const messageTarget = target.assetType === 'course-presentation' ? elements.presentationNote : elements.error;
+  try {
+    if (target.assetType === 'course-presentation') {
+      elements.presentationNote.textContent = `Завантажуємо ${file.name}: 0%`;
+    }
+    const uploaded = await uploadCourseAsset({
+      courseId,
+      lessonId: target.lessonId,
+      assetType: target.assetType,
+      file,
+      onProgress: (progress) => {
+        const text = `Завантажуємо ${file.name}: ${Math.round(progress * 100)}%`;
+        if (target.assetType === 'course-presentation') elements.presentationNote.textContent = text;
+      },
+    });
+
+    if (target.assetType === 'course-presentation') {
+      Object.assign(courseState, {
+        presentationFileKey: uploaded.objectKey,
+        presentationFileName: uploaded.fileName,
+        presentationFileContentType: uploaded.contentType,
+      });
+      const { error } = await supabase.from('presentations').upsert({
+        course_id: courseId,
+        embed_url: courseState.presentationUrl,
+        file_key: uploaded.objectKey,
+        file_name: uploaded.fileName,
+        file_content_type: uploaded.contentType,
+      });
+      if (error) throw error;
+      renderCoursePresentationFile();
+      elements.presentationNote.textContent = 'Файл завантажено ✓';
+      return;
+    }
+
+    const lesson = lessons.find((item) => item.id === target.lessonId);
+    if (!lesson) throw new Error('Урок не знайдено.');
+    if (target.assetType === 'lesson-presentation') {
+      const patch = {
+        presentation_file_key: uploaded.objectKey,
+        presentation_file_name: uploaded.fileName,
+        presentation_file_content_type: uploaded.contentType,
+      };
+      const { error } = await supabase.from('lessons').update(patch).eq('id', lesson.id);
+      if (error) throw error;
+      Object.assign(lesson, patch);
+      renderLessonPresentationFile(lesson);
+      renderComparison();
+      return;
+    }
+
+    const { error } = await supabase.from('videos').insert({
+      lesson_id: lesson.id,
+      youtube_id: '',
+      title: uploaded.fileName,
+      source_type: 'r2',
+      file_key: uploaded.objectKey,
+      file_name: uploaded.fileName,
+      file_content_type: uploaded.contentType,
+      order_index: lesson.videos.length,
+    });
+    if (error) throw error;
+    await load();
+  } catch (error) {
+    console.error('course asset upload failed', error);
+    if (target.assetType === 'course-presentation') elements.presentationNote.textContent = error.message || 'Не вдалося завантажити файл.';
+    else showError(error.message || 'Не вдалося завантажити файл.');
+  }
+}
+
+document.getElementById('choose-course-presentation').addEventListener('click', () => chooseAsset({ assetType: 'course-presentation', lessonId: null }));
+elements.lessonPresentationFileButton.addEventListener('click', () => {
+  const lesson = selectedLesson();
+  if (lesson) chooseAsset({ assetType: 'lesson-presentation', lessonId: lesson.id });
+});
+elements.addVideoFile.addEventListener('click', () => {
+  const lesson = selectedLesson();
+  if (lesson) chooseAsset({ assetType: 'lesson-video', lessonId: lesson.id });
+});
+elements.assetFile.addEventListener('change', () => uploadSelectedAsset(elements.assetFile.files[0]));
 elements.courseSettingsToggle.addEventListener('click', () => elements.courseSettings.showModal());
 elements.courseSettingsClose.addEventListener('click', () => elements.courseSettings.close());
 elements.courseSettings.addEventListener('click', (event) => {
   if (event.target === elements.courseSettings) elements.courseSettings.close();
-});
-elements.presentationFile.addEventListener('change', () => {
-  const file = elements.presentationFile.files[0];
-  if (!file) return;
-  elements.presentationNote.textContent = `${file.name} · завантаження підключимо наступним кроком`;
 });
 
 elements.lessonSearch.addEventListener('input', renderLessonList);

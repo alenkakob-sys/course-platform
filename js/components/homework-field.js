@@ -1,8 +1,9 @@
 import { getOrCreateThread, sendMessage } from '../chat.js';
 import { uploadPrivateFile, formatFileSize } from '../r2-files.js';
 import { getRequiredHomeworkFormats } from '../models/lesson.js';
+import { supabase } from '../supabaseClient.js';
 
-export function mountHomeworkField(container, { lesson, studentId, courseId, readOnly = false }) {
+export function mountHomeworkField(container, { lesson, studentId, courseId, readOnly = false, onSubmitted = null }) {
   if (!lesson.homework_enabled) {
     container.innerHTML = `<p class="muted">Для цього уроку домашнє завдання не потрібне.</p>`;
     return;
@@ -11,8 +12,9 @@ export function mountHomeworkField(container, { lesson, studentId, courseId, rea
   if (readOnly) {
     container.innerHTML = `
       ${lesson.homework_description ? `<p class="homework-description">${escapeHtml(lesson.homework_description)}</p>` : ''}
-      <p class="muted">Це режим адміністратора. Здавати домашнє завдання від імені учениці тут не можна.</p>
+      <div id="hw-review" class="homework-review"><p class="muted">Завантажуємо статус здачі…</p></div>
     `;
+    mountAdminReview(container.querySelector('#hw-review'), { lessonId: lesson.id, studentId });
     return;
   }
 
@@ -103,11 +105,20 @@ export function mountHomeworkField(container, { lesson, studentId, courseId, rea
         await sendMessage({ threadId, senderRole: 'student', body: file.name, attachmentUrl, kind: 'homework' });
       }
 
+      const { error: progressError } = await supabase.from('lesson_progress').upsert({
+        student_id: studentId,
+        lesson_id: lesson.id,
+        homework_submitted_at: new Date().toISOString(),
+        homework_review_status: 'pending',
+      }, { onConflict: 'student_id,lesson_id' });
+      if (progressError) throw progressError;
+
       textEl.value = '';
       files = [];
       renderFiles();
       statusEl.className = 'success-text';
       statusEl.textContent = 'Надіслано ✓ дивіться в чаті цього уроку';
+      onSubmitted?.();
     } catch (err) {
       console.error('homework submit failed', err);
       statusEl.className = 'error-text';
@@ -116,6 +127,47 @@ export function mountHomeworkField(container, { lesson, studentId, courseId, rea
       container.querySelector('#hw-submit').disabled = false;
     }
   });
+}
+
+async function mountAdminReview(container, { lessonId, studentId }) {
+  const { data: progress, error } = await supabase
+    .from('lesson_progress')
+    .select('homework_submitted_at, homework_review_status, reviewed_at')
+    .eq('lesson_id', lessonId)
+    .eq('student_id', studentId)
+    .maybeSingle();
+  if (error) {
+    container.innerHTML = '<p class="muted">Не вдалося завантажити статус.</p>';
+    return;
+  }
+  if (!progress?.homework_submitted_at) {
+    container.innerHTML = '<p class="muted">Домашнє завдання ще не здано.</p>';
+    return;
+  }
+  const labels = { pending: 'На перевірці', accepted: 'Зараховано', revision: 'Потребує виправлення' };
+  container.innerHTML = `
+    <p class="muted">Здано: ${new Date(progress.homework_submitted_at).toLocaleString('uk-UA')}</p>
+    <p><strong>${labels[progress.homework_review_status] || 'На перевірці'}</strong></p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button type="button" class="btn btn-primary" data-review="accepted">Зарахувати</button>
+      <button type="button" class="btn" data-review="revision">На виправлення</button>
+    </div>
+  `;
+  container.querySelectorAll('[data-review]').forEach((button) => button.addEventListener('click', async () => {
+    const status = button.dataset.review;
+    const buttons = container.querySelectorAll('button');
+    buttons.forEach((item) => { item.disabled = true; });
+    const { error: updateError } = await supabase.from('lesson_progress').update({
+      homework_review_status: status,
+      reviewed_at: new Date().toISOString(),
+    }).eq('lesson_id', lessonId).eq('student_id', studentId);
+    if (updateError) {
+      buttons.forEach((item) => { item.disabled = false; });
+      alert('Не вдалося зберегти статус.');
+      return;
+    }
+    mountAdminReview(container, { lessonId, studentId });
+  }));
 }
 
 function escapeHtml(str) {

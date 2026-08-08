@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Редагування курсу · Адмін-панель</title>
-<link rel="stylesheet" href="css/style.css?v=20260808-6" />
+<link rel="stylesheet" href="css/style.css?v=20260808-7" />
 </head>
 <body class="admin-body admin-editor-body">
 <div class="admin-shell" id="admin-shell">
@@ -76,15 +76,16 @@
               <div class="admin-add-row">
                 <input id="new-video" type="text" placeholder="YouTube-посилання або ID" />
                 <button id="add-video" class="admin-secondary admin-add-icon" type="button" title="Додати YouTube-відео">＋</button>
-                <button class="admin-secondary admin-upload-icon" type="button" disabled title="Завантаження відео підключимо до R2">⇧</button>
+                <button id="add-video-file" class="admin-secondary admin-upload-icon" type="button" title="Завантажити відеофайл">⇧</button>
                 </div>
               </div>
               <div class="admin-material-subsection">
                 <h4>Презентація</h4>
                 <div class="admin-add-row">
                   <input id="lesson-presentation-url" type="url" placeholder="Посилання" />
-                  <button class="admin-secondary admin-upload-icon" type="button" disabled title="Завантаження презентації підключимо до R2">⇧</button>
+                  <button id="lesson-presentation-file-button" class="admin-secondary admin-upload-icon" type="button" title="Завантажити презентацію">⇧</button>
                 </div>
+                <p id="lesson-presentation-file-name" class="admin-file-name" hidden></p>
               </div>
             </section>
 
@@ -144,11 +145,13 @@
     <h3>Загальна презентація</h3>
     <label class="admin-field compact-field">Посилання<input id="presentation-url" type="url" placeholder="https://…" /></label>
     <button id="choose-course-presentation" class="admin-secondary admin-upload-icon" type="button" title="Завантажити файл">⇧</button>
-    <input id="course-presentation-file" type="file" accept=".pdf,.ppt,.pptx,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" hidden />
+    <p id="course-presentation-file-name" class="admin-file-name" hidden></p>
     <p id="presentation-note" class="admin-inline-note"></p>
   </section>
 </dialog>
 
-<script type="module" src="js/pages/admin-manage-course.js?v=20260808-6"></script>
+<input id="course-asset-file" type="file" hidden />
+
+<script type="module" src="js/pages/admin-manage-course.js?v=20260808-7"></script>
 </body>
 </html>
