@@ -17,7 +17,7 @@ let courses = [];
 async function load() {
   setBusy(true);
   const [{ data: courseRows, error }, { data: lessonRows }, { data: accessRows }] = await Promise.all([
-    supabase.from('courses').select('id, title, order_index').order('order_index'),
+    supabase.from('courses').select('id, title, short_label, order_index').order('order_index'),
     supabase.from('lessons').select('course_id'),
     supabase.from('course_access').select('course_id'),
   ]);
@@ -54,7 +54,7 @@ function render() {
     article.className = 'admin-course-card';
     article.tabIndex = 0;
     article.innerHTML = `
-      <span class="number">Курс ${String(index + 1).padStart(2, '0')}</span>
+      <span class="number">${escapeHtml(course.short_label || `Курс ${String(index + 1).padStart(2, '0')}`)}</span>
       <h2>${escapeHtml(course.title)}</h2>
       <p>${course.lessonCount} ${plural(course.lessonCount, 'урок', 'уроки', 'уроків')}</p>
       <footer><span>${course.studentCount} ${plural(course.studentCount, 'учениця', 'учениці', 'учениць')}</span><span>→</span></footer>
@@ -71,7 +71,7 @@ addButton.addEventListener('click', async () => {
   addButton.textContent = 'Створюємо…';
   const { data, error } = await supabase
     .from('courses')
-    .insert({ title: 'Новий курс', order_index: courses.length })
+    .insert({ title: 'Новий курс', short_label: '', order_index: courses.length })
     .select('id')
     .single();
   if (error) {

@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Редагування курсу · Адмін-панель</title>
-<link rel="stylesheet" href="css/style.css?v=20260808-5" />
+<link rel="stylesheet" href="css/style.css?v=20260808-6" />
 </head>
 <body class="admin-body admin-editor-body">
 <div class="admin-shell" id="admin-shell">
@@ -25,17 +25,16 @@
     <header class="admin-compact-header">
       <div class="admin-course-path">
         <a href="admin-manage.html">Курси</a><span>/</span>
-        <input id="course-order" type="number" min="1" step="1" aria-label="Номер курсу" title="Номер курсу" />
+        <input id="course-short-label" type="text" maxlength="32" placeholder="Мітка" aria-label="Мітка курсу" title="Мітка курсу" />
         <input id="course-title" type="text" aria-label="Назва курсу" />
         <button id="course-settings-toggle" class="admin-presentation-button" type="button" aria-label="Загальна презентація" title="Загальна презентація">▧</button>
       </div>
       <div class="admin-view-switch" aria-label="Режим редактора">
         <button id="single-mode" class="active" type="button">Один урок</button>
-        <button id="table-mode" type="button">Таблиця курсу</button>
+        <button id="table-mode" type="button">Картки курсу</button>
       </div>
       <div class="admin-header-actions">
         <a id="preview-course" class="admin-secondary disabled" href="#" aria-disabled="true">◉ Переглянути як учениця</a>
-        <a id="finish-editing" class="admin-primary" href="admin-manage.html" title="Зберегти зміни й закрити">Готово</a>
       </div>
     </header>
 
@@ -77,14 +76,14 @@
               <div class="admin-add-row">
                 <input id="new-video" type="text" placeholder="YouTube-посилання або ID" />
                 <button id="add-video" class="admin-secondary admin-add-icon" type="button" title="Додати YouTube-відео">＋</button>
-                <button class="admin-secondary" type="button" disabled title="Підключимо до R2">⇧ Файл</button>
+                <button class="admin-secondary admin-upload-icon" type="button" disabled title="Завантаження відео підключимо до R2">⇧</button>
                 </div>
               </div>
               <div class="admin-material-subsection">
                 <h4>Презентація</h4>
                 <div class="admin-add-row">
-                  <input id="lesson-presentation-url" type="url" placeholder="Посилання" disabled />
-                  <button class="admin-secondary" type="button" disabled title="Підключимо до R2">⇧ Файл</button>
+                  <input id="lesson-presentation-url" type="url" placeholder="Посилання" />
+                  <button class="admin-secondary admin-upload-icon" type="button" disabled title="Завантаження презентації підключимо до R2">⇧</button>
                 </div>
               </div>
             </section>
@@ -106,8 +105,21 @@
               </div>
             </div>
             <div class="admin-access-column">
-              <div class="admin-section-title"><div><h3>Доступ до наступного уроку</h3></div><span class="admin-soon">Згодом</span></div>
-              <select disabled><option>Вільний доступ</option><option>Після здачі ДЗ</option><option>Після перевірки</option></select>
+              <div class="admin-section-title"><div><h3>Доступ до наступного уроку</h3></div></div>
+              <select id="access-rule" aria-label="Умова доступу до наступного уроку">
+                <option value="free">Вільний доступ</option>
+                <option value="after_submission">Після здачі ДЗ</option>
+                <option value="after_review">Після перевірки ДЗ</option>
+                <option value="after_delay">Через час</option>
+                <option value="scheduled">За графіком</option>
+              </select>
+              <div id="access-delay-settings" class="admin-access-timing" hidden>
+                <label>Через годин<input id="access-delay-hours" type="number" min="1" max="8760" step="1" /></label>
+              </div>
+              <div id="access-schedule-settings" class="admin-access-timing" hidden>
+                <label>Через днів<input id="access-delay-days" type="number" min="1" max="365" step="1" /></label>
+                <label>О котрій<input id="access-unlock-time" type="time" /></label>
+              </div>
             </div>
             </section>
           </div>
@@ -117,21 +129,9 @@
 
     <section id="table-view" class="admin-comparison-view" hidden>
       <div class="admin-comparison-toolbar">
-        <div class="admin-column-filters" aria-label="Показати дані">
-          <button class="active" data-filter="all" type="button">Усе</button>
-          <button data-filter="main" type="button">Основне</button>
-          <button data-filter="materials" type="button">Матеріали</button>
-          <button data-filter="homework" type="button">ДЗ</button>
-          <button data-filter="access" type="button">Доступ</button>
-        </div>
         <button id="add-lesson-table" class="admin-primary" type="button">＋ Додати урок</button>
       </div>
-      <div class="admin-comparison-scroll">
-        <table class="admin-comparison-table">
-          <thead><tr><th data-table-column="main">Основне</th><th data-table-column="materials">Матеріали</th><th data-table-column="homework-access">Домашнє завдання + доступ</th></tr></thead>
-          <tbody id="comparison-body"></tbody>
-        </table>
-      </div>
+      <div id="comparison-body" class="admin-comparison-card-list"></div>
     </section>
 
     <p id="editor-error" class="admin-alert error" hidden></p>
@@ -143,12 +143,12 @@
   <section>
     <h3>Загальна презентація</h3>
     <label class="admin-field compact-field">Посилання<input id="presentation-url" type="url" placeholder="https://…" /></label>
-    <button id="choose-course-presentation" class="admin-secondary" type="button">⇧ Завантажити файл</button>
+    <button id="choose-course-presentation" class="admin-secondary admin-upload-icon" type="button" title="Завантажити файл">⇧</button>
     <input id="course-presentation-file" type="file" accept=".pdf,.ppt,.pptx,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" hidden />
     <p id="presentation-note" class="admin-inline-note"></p>
   </section>
 </dialog>
 
-<script type="module" src="js/pages/admin-manage-course.js?v=20260808-5"></script>
+<script type="module" src="js/pages/admin-manage-course.js?v=20260808-6"></script>
 </body>
 </html>

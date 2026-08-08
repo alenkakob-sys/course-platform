@@ -486,57 +486,45 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
   background: transparent; color: var(--admin-text); font-size: 17px; font-weight: 700;
 }
 .admin-course-path #course-title:hover { background: rgba(255,255,255,.04); }
-.admin-course-path #course-order {
-  width: 42px; min-width: 42px; border: 0; border-radius: 5px; padding: 7px 3px;
+.admin-course-path #course-short-label {
+  width: 72px; min-width: 54px; border: 0; border-radius: 5px; padding: 7px 6px;
   background: transparent; color: var(--admin-gold); font-weight: 700; text-align: center;
 }
-.admin-course-path #course-order:hover,
-.admin-course-path #course-order:focus { background: rgba(255,255,255,.06); }
+.admin-course-path #course-short-label:hover,
+.admin-course-path #course-short-label:focus { background: rgba(255,255,255,.06); }
 .admin-presentation-button {
   width: 38px; height: 38px; flex: 0 0 38px; border: 1px solid var(--admin-border); border-radius: 8px;
   background: transparent; color: var(--admin-gold); font-size: 19px; cursor: pointer;
 }
 .admin-presentation-button:hover { background: var(--admin-gold-soft); }
-.admin-view-switch,
-.admin-column-filters { display: flex; padding: 3px; border: 1px solid var(--admin-border); border-radius: 9px; background: #1b1f22; }
-.admin-view-switch button,
-.admin-column-filters button {
+.admin-view-switch { display: flex; padding: 3px; border: 1px solid var(--admin-border); border-radius: 9px; background: #1b1f22; }
+.admin-view-switch button {
   min-height: 36px; padding: 0 12px; border: 0; border-radius: 6px;
   background: transparent; color: var(--admin-muted); cursor: pointer; white-space: nowrap;
 }
-.admin-view-switch button.active,
-.admin-column-filters button.active { background: var(--admin-surface-3); color: var(--admin-gold); }
+.admin-view-switch button.active { background: var(--admin-surface-3); color: var(--admin-gold); }
 .admin-compact-header .admin-header-actions { margin: 0; }
 .admin-compact-header .admin-header-actions > * { white-space: nowrap; }
-.admin-compact-header .admin-primary { min-width: 96px; }
 
 .admin-single-sections { margin-top: 12px; }
 .admin-primary-fields { margin-bottom: 12px; }
-.lesson-identity-grid { grid-template-columns: 110px minmax(240px, 1fr) minmax(190px, .65fr); margin-top: 0; }
+.lesson-identity-grid { grid-template-columns: 92px minmax(0, 1fr) minmax(150px, .72fr); margin-top: 0; min-width: 0; }
 .compact-field { margin-top: 0; }
 .admin-inline-note { min-height: 16px; margin: -2px 0 0 !important; font-size: 11px; }
 .admin-homework-access-panel { display: grid; gap: 18px; }
 .admin-access-column { padding-top: 18px; border-top: 1px solid var(--admin-border); }
 .admin-access-column select { margin-top: 5px; }
 
-.admin-comparison-view { border: 1px solid var(--admin-border); border-radius: 10px; background: rgba(31,35,39,.82); overflow: hidden; }
-.admin-comparison-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border-bottom: 1px solid var(--admin-border); }
-.admin-comparison-scroll { overflow: auto; max-height: calc(100vh - 116px); }
-.admin-comparison-table { width: 100%; min-width: 1050px; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
-.admin-comparison-table th,
-.admin-comparison-table td { padding: 12px; border: 0; border-right: 1px solid var(--admin-border); border-bottom: 1px solid var(--admin-border); text-align: left; vertical-align: top; }
-.admin-comparison-table thead th { position: sticky; top: 0; z-index: 4; background: #252a2e; color: #dce0e3; font-size: 12px; }
-.admin-comparison-table thead th:nth-child(1) { width: 36%; }
-.admin-comparison-table thead th:nth-child(2) { width: 31%; }
-.admin-comparison-table thead th:nth-child(3) { width: 33%; }
-.admin-comparison-table tbody tr:last-child > * { border-bottom: 0; }
-.admin-comparison-table tr > *:last-child { border-right: 0; }
-.admin-comparison-table label { display: block; color: var(--admin-muted); font-size: 10px; }
-.admin-comparison-table input,
-.admin-comparison-table textarea,
-.admin-comparison-table select { min-width: 0; margin-top: 4px; padding: 8px 9px; border-radius: 6px; font-size: 12px; }
-.admin-comparison-table[data-active-filter]:not([data-active-filter="all"]) th,
-.admin-comparison-table[data-active-filter]:not([data-active-filter="all"]) td { width: auto; }
+.admin-comparison-view { background: transparent; overflow: visible; }
+.admin-comparison-toolbar { display: flex; justify-content: flex-end; margin: 0 0 12px; }
+.admin-comparison-card-list { display: grid; gap: 12px; }
+.admin-comparison-card { display: grid; grid-template-columns: minmax(0,1.05fr) minmax(0,.9fr) minmax(0,.95fr); border: 1px solid var(--admin-border); border-radius: 11px; background: rgba(31,35,39,.82); overflow: hidden; }
+.admin-comparison-section { min-width: 0; padding: 13px; }
+.admin-comparison-section + .admin-comparison-section { border-left: 1px solid var(--admin-border); }
+.admin-comparison-card label { display: block; color: var(--admin-muted); font-size: 10px; }
+.admin-comparison-card input,
+.admin-comparison-card textarea,
+.admin-comparison-card select { min-width: 0; margin-top: 4px; padding: 8px 9px; border-radius: 6px; font-size: 12px; }
 .admin-table-main-grid { display: grid; grid-template-columns: 72px minmax(0,1fr); gap: 7px; margin-bottom: 7px; }
 .admin-comparison-table td > label + label { margin-top: 7px; }
 .admin-table-videos { display: flex; flex-wrap: wrap; gap: 5px; min-height: 28px; }
@@ -544,7 +532,7 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
 .admin-table-empty { color: #7f878e; font-size: 11px; }
 .admin-table-add-video { display: grid; grid-template-columns: minmax(0,1fr) 32px; gap: 5px; margin-top: 7px; }
 .admin-table-add-video button { margin-top: 4px; border: 1px solid var(--admin-border); border-radius: 6px; background: transparent; color: var(--admin-gold); cursor: pointer; }
-.admin-table-presentation { margin-top: 9px; padding-top: 8px; border-top: 1px solid #363c42; color: var(--admin-muted); font-size: 11px; }
+.admin-table-presentation { display: grid; grid-template-columns: minmax(0,1fr) 36px; align-items: end; gap: 6px; margin-top: 9px; padding-top: 8px; border-top: 1px solid #363c42; color: var(--admin-muted); font-size: 11px; }
 .admin-table-subsection + .admin-table-subsection { margin-top: 10px; padding-top: 10px; border-top: 1px solid #3a4147; }
 .admin-table-subsection textarea,
 .admin-table-subsection select { margin-top: 6px; }
@@ -553,6 +541,8 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
 .admin-table-requirements { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 8px; }
 .admin-table-requirements label { display: flex; align-items: center; gap: 4px; color: var(--admin-text); }
 .admin-table-requirements input { width: auto; margin: 0; accent-color: var(--admin-gold); }
+.admin-table-timing { margin-top: 8px; }
+.admin-table-timing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 8px; }
 
 .admin-lesson-data-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(280px, .95fr); gap: 12px; }
 .admin-materials-panel > h3 { margin-bottom: 15px; }
@@ -563,9 +553,17 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
 .admin-homework-formats legend { margin-bottom: 8px; color: var(--admin-muted); font-size: 11px; }
 .admin-homework-formats label { display: flex; align-items: center; gap: 6px; color: var(--admin-text); font-size: 12px; }
 .admin-homework-formats input { width: auto; accent-color: var(--admin-gold); }
-.lesson-identity-grid > label { display: grid; grid-template-rows: auto 54px; align-items: stretch; }
+.lesson-identity-grid > label { display: grid; grid-template-rows: auto 42px; align-items: stretch; min-width: 0; }
 .lesson-identity-grid input,
-.lesson-identity-grid select { height: 54px; margin-top: 6px; }
+.lesson-identity-grid select { height: 42px; min-width: 0; margin-top: 6px; }
+.admin-lesson-editor,
+.admin-primary-fields { min-width: 0; overflow: hidden; }
+.admin-upload-icon { width: 36px !important; min-width: 36px !important; height: 36px; min-height: 36px !important; padding: 0 !important; color: var(--admin-gold) !important; font-size: 18px; line-height: 1; }
+.admin-add-row .admin-secondary { min-height: 36px; }
+.admin-add-row .admin-add-icon { width: 36px; min-width: 36px; height: 36px; min-height: 36px; font-size: 18px; }
+.admin-access-timing { display: grid; gap: 8px; margin-top: 10px; }
+.admin-access-timing label { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px; color: var(--admin-muted); font-size: 12px; }
+.admin-access-timing input { width: 106px; margin: 0; }
 
 .admin-course-settings { width: min(520px, calc(100vw - 28px)); border: 1px solid var(--admin-border); border-radius: 12px; background: #202428; color: var(--admin-text); padding: 20px; box-shadow: 0 30px 90px rgba(0,0,0,.55); }
 .admin-course-settings::backdrop { background: rgba(8,10,12,.74); backdrop-filter: blur(3px); }
@@ -581,7 +579,7 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
 @media (max-width: 1020px) {
   .admin-compact-header { grid-template-columns: minmax(240px, 1fr) auto; }
   .admin-compact-header .admin-header-actions { grid-column: 1 / -1; justify-content: flex-end; }
-  .lesson-identity-grid { grid-template-columns: 100px minmax(200px, 1fr); }
+  .lesson-identity-grid { grid-template-columns: 92px minmax(0, 1fr); }
   .lesson-identity-grid label:last-child { grid-column: 1 / -1; }
 }
 
@@ -607,12 +605,15 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
   .admin-compact-header .admin-header-actions > * { flex: 1; }
   .admin-homework-access-panel { grid-template-columns: 1fr; }
   .admin-access-column { padding: 17px 0 0; border-left: 0; border-top: 1px solid var(--admin-border); }
-  .admin-comparison-toolbar { align-items: stretch; flex-direction: column; }
-  .admin-column-filters { overflow-x: auto; }
+  .admin-comparison-card { grid-template-columns: 1fr; }
+  .admin-comparison-section + .admin-comparison-section { border-left: 0; border-top: 1px solid var(--admin-border); }
 }
 
 @media (max-width: 560px) {
   .admin-course-path .admin-save-status { flex: 0 0 100%; }
   .admin-course-path #course-title { font-size: 15px; }
-  .lesson-identity-grid { grid-template-columns: 90px minmax(0,1fr); }
+  .lesson-identity-grid { grid-template-columns: 82px minmax(0,1fr); }
+  .admin-add-row { flex-direction: row; }
+  .admin-add-row .admin-upload-icon,
+  .admin-add-row .admin-add-icon { width: 36px; }
 }

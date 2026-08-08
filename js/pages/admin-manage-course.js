@@ -1,6 +1,6 @@
 import { supabase } from '../supabaseClient.js';
 import { requireAdmin, wireLogoutButton } from '../auth.js';
-import { ADMIN_LESSON_SELECT, HOMEWORK_REQUIREMENTS, normalizeLesson } from '../models/lesson.js';
+import { ADMIN_LESSON_SELECT, HOMEWORK_REQUIREMENTS, NEXT_LESSON_ACCESS_RULES, normalizeLesson } from '../models/lesson.js';
 
 const urlParams = new URLSearchParams(window.location.search);
 const courseId = urlParams.get('course');
@@ -12,9 +12,8 @@ wireLogoutButton(document.getElementById('logout-btn'));
 
 const elements = {
   courseTitle: document.getElementById('course-title'),
-  courseOrder: document.getElementById('course-order'),
+  courseShortLabel: document.getElementById('course-short-label'),
   preview: document.getElementById('preview-course'),
-  done: document.getElementById('finish-editing'),
   shell: document.getElementById('admin-shell'),
   toggleSidebar: document.getElementById('toggle-sidebar'),
   singleMode: document.getElementById('single-mode'),
@@ -33,6 +32,7 @@ const elements = {
   lessonShortLabel: document.getElementById('lesson-short-label'),
   lessonDescription: document.getElementById('lesson-description'),
   lessonParent: document.getElementById('lesson-parent'),
+  lessonPresentationUrl: document.getElementById('lesson-presentation-url'),
   presentationUrl: document.getElementById('presentation-url'),
   videoCount: document.getElementById('video-count'),
   videoList: document.getElementById('video-list'),
@@ -40,6 +40,12 @@ const elements = {
   homeworkEnabled: document.getElementById('homework-enabled'),
   homeworkSettings: document.getElementById('homework-settings'),
   homeworkDescription: document.getElementById('homework-description'),
+  accessRule: document.getElementById('access-rule'),
+  accessDelaySettings: document.getElementById('access-delay-settings'),
+  accessScheduleSettings: document.getElementById('access-schedule-settings'),
+  accessDelayHours: document.getElementById('access-delay-hours'),
+  accessDelayDays: document.getElementById('access-delay-days'),
+  accessUnlockTime: document.getElementById('access-unlock-time'),
   error: document.getElementById('editor-error'),
   presentationFile: document.getElementById('course-presentation-file'),
   presentationNote: document.getElementById('presentation-note'),
@@ -65,7 +71,7 @@ const pendingSaves = new Map();
 async function load({ keepSelection = true } = {}) {
   setSaveStatus('Завантаження…', 'saving');
   const [{ data: courseData, error: courseError }, { data: presentation }, { data: lessonRows, error: lessonsError }, { data: previewAccess }] = await Promise.all([
-    supabase.from('courses').select('id, title, order_index').eq('id', courseId).single(),
+    supabase.from('courses').select('id, title, short_label').eq('id', courseId).single(),
     supabase.from('presentations').select('embed_url').eq('course_id', courseId).maybeSingle(),
     supabase
       .from('lessons')
@@ -86,7 +92,7 @@ async function load({ keepSelection = true } = {}) {
   if (!keepSelection || !lessons.some((lesson) => lesson.id === selectedLessonId)) selectedLessonId = lessons[0]?.id || null;
 
   elements.courseTitle.value = courseState.title;
-  elements.courseOrder.value = String(courseState.order_index + 1);
+  elements.courseShortLabel.value = courseState.short_label || '';
   elements.presentationUrl.value = courseState.presentationUrl;
   if (previewAccess?.student_id) {
     elements.preview.href = `course.html?course=${courseId}&student=${previewAccess.student_id}&admin=1`;
@@ -170,47 +176,55 @@ function renderEditor() {
   elements.homeworkSettings.hidden = !lesson.homework_enabled;
   for (const [field, input] of homeworkRequirementInputs) input.checked = lesson[field];
   elements.homeworkDescription.value = lesson.homework_description || '';
+  elements.lessonPresentationUrl.value = lesson.presentation_url || '';
+  elements.accessRule.value = lesson.next_lesson_access_rule;
+  elements.accessDelayHours.value = String(lesson.next_lesson_delay_hours);
+  elements.accessDelayDays.value = String(lesson.next_lesson_delay_days);
+  elements.accessUnlockTime.value = lesson.next_lesson_unlock_time;
+  renderAccessTiming(lesson);
 }
 
 function renderComparison() {
   elements.comparisonBody.innerHTML = '';
   if (!lessons.length) {
-    elements.comparisonBody.innerHTML = '<tr><td colspan="3">Додайте перший урок.</td></tr>';
+    elements.comparisonBody.innerHTML = '<div class="admin-empty-card">Додайте перший урок.</div>';
     return;
   }
 
   for (const lesson of lessons) {
-    const row = document.createElement('tr');
-    row.dataset.lessonId = lesson.id;
-    row.innerHTML = `
-      <td data-table-column="main">
+    const card = document.createElement('article');
+    card.className = 'admin-comparison-card';
+    card.dataset.lessonId = lesson.id;
+    card.innerHTML = `
+      <div class="admin-comparison-section">
         <div class="admin-table-main-grid">
           <label>Мітка<input type="text" data-table-field="short_label" value="${escapeAttribute(lesson.short_label || '')}" /></label>
           <label>Назва<input type="text" data-table-field="title" value="${escapeAttribute(lesson.title)}" /></label>
         </div>
         <label>Структура<select data-table-field="parent_lesson_id"></select></label>
         <label>Опис<textarea data-table-field="description" rows="2">${escapeHtml(lesson.description || '')}</textarea></label>
-      </td>
-      <td data-table-column="materials">
+      </div>
+      <div class="admin-comparison-section">
         <div class="admin-table-videos"></div>
         <div class="admin-table-add-video"><input type="text" data-table-new-video placeholder="YouTube-посилання" /><button type="button">＋</button></div>
-        <div class="admin-table-presentation">▧ Презентація уроку: не додана</div>
-      </td>
-      <td data-table-column="homework-access">
-        <div data-table-subsection="homework" class="admin-table-subsection">
+        <div class="admin-table-presentation"><label>Презентація<input type="url" data-table-field="presentation_url" placeholder="Посилання" value="${escapeAttribute(lesson.presentation_url || '')}" /></label><button class="admin-secondary admin-upload-icon" type="button" disabled title="Завантаження презентації підключимо до R2">⇧</button></div>
+      </div>
+      <div class="admin-comparison-section">
+        <div class="admin-table-subsection">
           <label class="admin-table-check"><input data-table-homework-enabled type="checkbox" ${lesson.homework_enabled ? 'checked' : ''} /> Є ДЗ</label>
           <div class="admin-table-requirements">
             ${HOMEWORK_REQUIREMENTS.map(({ field, label }) => `<label><input data-require="${field}" type="checkbox" ${lesson[field] ? 'checked' : ''} ${lesson.homework_enabled ? '' : 'disabled'} /> ${label}</label>`).join('')}
           </div>
           <textarea data-table-field="homework_description" rows="2" placeholder="Текст завдання" ${lesson.homework_enabled ? '' : 'disabled'}>${escapeHtml(lesson.homework_description || '')}</textarea>
         </div>
-        <div data-table-subsection="access" class="admin-table-subsection">
-          <label>Доступ<select disabled><option>Вільний доступ</option><option>Після здачі ДЗ</option><option>Після перевірки</option></select></label>
+        <div class="admin-table-subsection admin-table-access">
+          <label>Доступ<select data-table-field="next_lesson_access_rule">${NEXT_LESSON_ACCESS_RULES.map(({ value, label }) => `<option value="${value}" ${lesson.next_lesson_access_rule === value ? 'selected' : ''}>${label}</option>`).join('')}</select></label>
+          ${renderTableAccessTiming(lesson)}
         </div>
-      </td>
+      </div>
     `;
 
-    const parentSelect = row.querySelector('[data-table-field="parent_lesson_id"]');
+    const parentSelect = card.querySelector('[data-table-field="parent_lesson_id"]');
     parentSelect.innerHTML = '<option value="">Головний рівень</option>';
     for (const candidate of lessons.filter((item) => item.id !== lesson.id && item.parent_lesson_id !== lesson.id)) {
       const option = document.createElement('option');
@@ -220,7 +234,7 @@ function renderComparison() {
     }
     parentSelect.value = lesson.parent_lesson_id || '';
 
-    const videosWrap = row.querySelector('.admin-table-videos');
+    const videosWrap = card.querySelector('.admin-table-videos');
     if (!lesson.videos.length) videosWrap.innerHTML = '<span class="admin-table-empty">Без відео</span>';
     lesson.videos.forEach((video, index) => {
       const chip = document.createElement('span');
@@ -230,29 +244,38 @@ function renderComparison() {
       videosWrap.appendChild(chip);
     });
 
-    row.querySelectorAll('[data-table-field]').forEach((fieldEl) => {
+    card.querySelectorAll('[data-table-field]').forEach((fieldEl) => {
       const field = fieldEl.dataset.tableField;
       const eventName = fieldEl.tagName === 'TEXTAREA' || fieldEl.tagName === 'INPUT' ? 'input' : 'change';
       fieldEl.addEventListener(eventName, () => {
         const value = field === 'parent_lesson_id' ? (fieldEl.value || null) : fieldEl.value;
         lesson[field] = value;
-        if (field === 'title' || field === 'short_label') {
-          renderLessonList();
-        }
+        if (field === 'title' || field === 'short_label') renderLessonList();
+        if (field === 'next_lesson_access_rule') renderComparison();
         scheduleSave(`lesson-${lesson.id}-${field}`, () => supabase.from('lessons').update({ [field]: value }).eq('id', lesson.id));
       });
     });
 
-    const homeworkToggle = row.querySelector('[data-table-homework-enabled]');
+    card.querySelectorAll('[data-table-access-number], [data-table-access-time]').forEach((fieldEl) => {
+      fieldEl.addEventListener('change', () => {
+        const field = fieldEl.dataset.tableAccessNumber || fieldEl.dataset.tableAccessTime;
+        const value = fieldEl.dataset.tableAccessNumber ? Math.max(1, Number(fieldEl.value) || 1) : fieldEl.value;
+        lesson[field] = value;
+        fieldEl.value = String(value);
+        runSave(() => supabase.from('lessons').update({ [field]: value }).eq('id', lesson.id));
+      });
+    });
+
+    const homeworkToggle = card.querySelector('[data-table-homework-enabled]');
     homeworkToggle.addEventListener('change', () => {
       lesson.homework_enabled = homeworkToggle.checked;
-      row.querySelectorAll('[data-require]').forEach((checkbox) => { checkbox.disabled = !homeworkToggle.checked; });
-      row.querySelector('[data-table-field="homework_description"]').disabled = !homeworkToggle.checked;
+      card.querySelectorAll('[data-require]').forEach((checkbox) => { checkbox.disabled = !homeworkToggle.checked; });
+      card.querySelector('[data-table-field="homework_description"]').disabled = !homeworkToggle.checked;
       renderLessonList();
       runSave(() => supabase.from('lessons').update({ homework_enabled: lesson.homework_enabled }).eq('id', lesson.id));
     });
 
-    row.querySelectorAll('[data-require]').forEach((checkbox) => {
+    card.querySelectorAll('[data-require]').forEach((checkbox) => {
       checkbox.addEventListener('change', () => {
         const field = checkbox.dataset.require;
         lesson[field] = checkbox.checked;
@@ -260,16 +283,25 @@ function renderComparison() {
       });
     });
 
-    const addVideoButton = row.querySelector('.admin-table-add-video button');
-    const addVideoInput = row.querySelector('[data-table-new-video]');
+    const addVideoButton = card.querySelector('.admin-table-add-video button');
+    const addVideoInput = card.querySelector('[data-table-new-video]');
     addVideoButton.addEventListener('click', () => addVideoToLesson(lesson, addVideoInput));
     addVideoInput.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') { event.preventDefault(); addVideoToLesson(lesson, addVideoInput); }
     });
 
-    elements.comparisonBody.appendChild(row);
+    elements.comparisonBody.appendChild(card);
   }
-  applyColumnFilter(document.querySelector('.admin-column-filters .active')?.dataset.filter || 'all');
+}
+
+function renderTableAccessTiming(lesson) {
+  if (lesson.next_lesson_access_rule === 'after_delay') {
+    return `<label class="admin-table-timing">Через годин<input type="number" min="1" max="8760" data-table-access-number="next_lesson_delay_hours" value="${lesson.next_lesson_delay_hours}" /></label>`;
+  }
+  if (lesson.next_lesson_access_rule === 'scheduled') {
+    return `<div class="admin-table-timing-grid"><label>Через днів<input type="number" min="1" max="365" data-table-access-number="next_lesson_delay_days" value="${lesson.next_lesson_delay_days}" /></label><label>О котрій<input type="time" data-table-access-time="next_lesson_unlock_time" value="${escapeAttribute(lesson.next_lesson_unlock_time)}" /></label></div>`;
+  }
+  return '';
 }
 
 function renderVideos(lesson) {
@@ -362,44 +394,10 @@ elements.courseTitle.addEventListener('input', () => {
   scheduleSave('course-title', () => supabase.from('courses').update({ title: value.trim() || 'Без назви' }).eq('id', courseId));
 });
 
-elements.courseOrder.addEventListener('change', async () => {
-  const requestedPosition = Number.parseInt(elements.courseOrder.value, 10);
-  if (!Number.isInteger(requestedPosition) || requestedPosition < 1) {
-    elements.courseOrder.value = String(courseState.order_index + 1);
-    return;
-  }
-
-  await flushPending();
-  const { data: courseRows, error } = await supabase
-    .from('courses')
-    .select('id, order_index')
-    .order('order_index');
-  if (error || !courseRows) {
-    showError('Не вдалося змінити номер курсу.');
-    elements.courseOrder.value = String(courseState.order_index + 1);
-    return;
-  }
-
-  const orderedCourses = [...courseRows];
-  const currentIndex = orderedCourses.findIndex((item) => item.id === courseId);
-  const targetIndex = Math.min(requestedPosition - 1, orderedCourses.length - 1);
-  if (currentIndex < 0 || currentIndex === targetIndex) {
-    elements.courseOrder.value = String((currentIndex < 0 ? courseState.order_index : targetIndex) + 1);
-    return;
-  }
-
-  const [movedCourse] = orderedCourses.splice(currentIndex, 1);
-  orderedCourses.splice(targetIndex, 0, movedCourse);
-  orderedCourses.forEach((item, index) => { item.order_index = index; });
-  courseState.order_index = targetIndex;
-  elements.courseOrder.value = String(targetIndex + 1);
-
-  await runSave(async () => {
-    const updates = await Promise.all(orderedCourses.map((item) =>
-      supabase.from('courses').update({ order_index: item.order_index }).eq('id', item.id)
-    ));
-    return { error: updates.find((result) => result.error)?.error || null };
-  });
+elements.courseShortLabel.addEventListener('input', () => {
+  const value = elements.courseShortLabel.value;
+  courseState.short_label = value;
+  scheduleSave('course-short-label', () => supabase.from('courses').update({ short_label: value.trim() }).eq('id', courseId));
 });
 
 elements.presentationUrl.addEventListener('input', () => {
@@ -430,6 +428,7 @@ bindLessonText(elements.lessonTitle, 'title', { refreshTitles: true });
 bindLessonText(elements.lessonShortLabel, 'short_label', { refreshTitles: true });
 bindLessonText(elements.lessonDescription, 'description');
 bindLessonText(elements.homeworkDescription, 'homework_description');
+bindLessonText(elements.lessonPresentationUrl, 'presentation_url');
 
 elements.lessonParent.addEventListener('change', () => {
   const lesson = selectedLesson();
@@ -457,6 +456,42 @@ homeworkRequirementInputs.forEach((checkbox, field) => checkbox.addEventListener
   renderComparison();
   runSave(() => supabase.from('lessons').update({ [field]: checkbox.checked }).eq('id', lesson.id));
 }));
+
+function renderAccessTiming(lesson) {
+  elements.accessDelaySettings.hidden = lesson.next_lesson_access_rule !== 'after_delay';
+  elements.accessScheduleSettings.hidden = lesson.next_lesson_access_rule !== 'scheduled';
+}
+
+elements.accessRule.addEventListener('change', () => {
+  const lesson = selectedLesson();
+  if (!lesson) return;
+  lesson.next_lesson_access_rule = elements.accessRule.value;
+  renderAccessTiming(lesson);
+  renderComparison();
+  runSave(() => supabase.from('lessons').update({ next_lesson_access_rule: lesson.next_lesson_access_rule }).eq('id', lesson.id));
+});
+
+function bindAccessNumber(element, field) {
+  element.addEventListener('change', () => {
+    const lesson = selectedLesson();
+    if (!lesson) return;
+    const value = Math.max(1, Number(element.value) || 1);
+    element.value = String(value);
+    lesson[field] = value;
+    renderComparison();
+    runSave(() => supabase.from('lessons').update({ [field]: value }).eq('id', lesson.id));
+  });
+}
+
+bindAccessNumber(elements.accessDelayHours, 'next_lesson_delay_hours');
+bindAccessNumber(elements.accessDelayDays, 'next_lesson_delay_days');
+elements.accessUnlockTime.addEventListener('change', () => {
+  const lesson = selectedLesson();
+  if (!lesson) return;
+  lesson.next_lesson_unlock_time = elements.accessUnlockTime.value || '09:00';
+  renderComparison();
+  runSave(() => supabase.from('lessons').update({ next_lesson_unlock_time: lesson.next_lesson_unlock_time }).eq('id', lesson.id));
+});
 
 async function createLesson() {
   await flushPending();
@@ -613,19 +648,6 @@ function applySidebarState() {
   elements.toggleSidebar.title = collapsed ? 'Розгорнути меню' : 'Згорнути меню';
 }
 
-function applyColumnFilter(filter) {
-  document.querySelector('.admin-comparison-table').dataset.activeFilter = filter;
-  document.querySelectorAll('.admin-column-filters [data-filter]').forEach((button) => button.classList.toggle('active', button.dataset.filter === filter));
-  document.querySelectorAll('[data-table-column]').forEach((cell) => {
-    const group = cell.dataset.tableColumn;
-    const visible = filter === 'all' || group === filter || (group === 'homework-access' && (filter === 'homework' || filter === 'access'));
-    cell.hidden = !visible;
-  });
-  document.querySelectorAll('[data-table-subsection]').forEach((section) => {
-    section.hidden = (filter === 'homework' || filter === 'access') && section.dataset.tableSubsection !== filter;
-  });
-}
-
 elements.singleMode.addEventListener('click', () => setEditorMode('single'));
 elements.tableMode.addEventListener('click', () => setEditorMode('table'));
 elements.toggleSidebar.addEventListener('click', () => {
@@ -633,7 +655,6 @@ elements.toggleSidebar.addEventListener('click', () => {
   localStorage.setItem('admin-sidebar-collapsed', sidebarManuallyCollapsed ? '1' : '0');
   applySidebarState();
 });
-document.querySelectorAll('.admin-column-filters [data-filter]').forEach((button) => button.addEventListener('click', () => applyColumnFilter(button.dataset.filter)));
 
 document.getElementById('choose-course-presentation').addEventListener('click', () => elements.presentationFile.click());
 elements.courseSettingsToggle.addEventListener('click', () => elements.courseSettings.showModal());
@@ -648,11 +669,6 @@ elements.presentationFile.addEventListener('change', () => {
 });
 
 elements.lessonSearch.addEventListener('input', renderLessonList);
-elements.done.addEventListener('click', async (event) => {
-  event.preventDefault();
-  await flushPending();
-  window.location.href = elements.done.href;
-});
 elements.preview.addEventListener('click', async (event) => {
   event.preventDefault();
   if (elements.preview.classList.contains('disabled')) return;
