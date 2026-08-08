@@ -1,16 +1,24 @@
-import { supabase } from '../supabaseClient.js';
 import { getOrCreateThread, sendMessage } from '../chat.js';
+import { uploadPrivateFile, formatFileSize } from '../r2-files.js';
 
-export function mountHomeworkField(container, { lesson, studentId, courseId }) {
+export function mountHomeworkField(container, { lesson, studentId, courseId, readOnly = false }) {
   if (!lesson.homework_type && !lesson.homework_description) {
     container.innerHTML = `<p class="muted">Для цього уроку домашнє завдання не потрібне.</p>`;
+    return;
+  }
+
+  if (readOnly) {
+    container.innerHTML = `
+      ${lesson.homework_description ? `<p class="homework-description">${escapeHtml(lesson.homework_description)}</p>` : ''}
+      <p class="muted">Це режим адміністратора. Здавати домашнє завдання від імені учениці тут не можна.</p>
+    `;
     return;
   }
 
   let files = [];
 
   container.innerHTML = `
-    ${lesson.homework_description ? `<p style="white-space:pre-wrap;background:var(--surface-2);border-radius:8px;padding:10px;margin-bottom:10px;font-size:13px;">${escapeHtml(lesson.homework_description)}</p>` : ''}
+    ${lesson.homework_description ? `<p class="homework-description">${escapeHtml(lesson.homework_description)}</p>` : ''}
     <textarea id="hw-text" rows="3" placeholder="Ваша відповідь (необов'язково, якщо додаєте лише файли)"></textarea>
     <div id="hw-files" style="margin:8px 0;"></div>
     <div style="display:flex;gap:8px;align-items:center;">
@@ -32,7 +40,7 @@ export function mountHomeworkField(container, { lesson, studentId, courseId }) {
       const row = document.createElement('div');
       row.className = 'row-between';
       row.style.fontSize = '12px';
-      row.innerHTML = `<span>${escapeHtml(f.name)}</span>`;
+      row.innerHTML = `<span>${escapeHtml(f.name)} <span class="muted">· ${formatFileSize(f.size)}</span></span>`;
       const removeBtn = document.createElement('button');
       removeBtn.textContent = '✕';
       removeBtn.style.color = 'var(--danger)';
@@ -59,16 +67,23 @@ export function mountHomeworkField(container, { lesson, studentId, courseId }) {
 
     try {
       const threadId = await getOrCreateThread(studentId, courseId, lesson.id);
+      const submitButton = container.querySelector('#hw-submit');
+      submitButton.disabled = true;
 
       if (text) {
         await sendMessage({ threadId, senderRole: 'student', body: text, kind: 'homework' });
       }
-      for (const file of files) {
-        const path = `${threadId}/${Date.now()}-${file.name}`;
-        const { error: uploadError } = await supabase.storage.from('chat-attachments').upload(path, file);
-        if (uploadError) throw uploadError;
-        const { data: pub } = supabase.storage.from('chat-attachments').getPublicUrl(path);
-        await sendMessage({ threadId, senderRole: 'student', body: '', attachmentUrl: pub.publicUrl, kind: 'homework' });
+      for (let index = 0; index < files.length; index += 1) {
+        const file = files[index];
+        const attachmentUrl = await uploadPrivateFile({
+          threadId,
+          file,
+          kind: 'homework',
+          onProgress: (progress) => {
+            statusEl.textContent = `Файл ${index + 1} з ${files.length}: ${Math.round(progress * 100)}%`;
+          },
+        });
+        await sendMessage({ threadId, senderRole: 'student', body: file.name, attachmentUrl, kind: 'homework' });
       }
 
       textEl.value = '';
@@ -79,7 +94,9 @@ export function mountHomeworkField(container, { lesson, studentId, courseId }) {
     } catch (err) {
       console.error('homework submit failed', err);
       statusEl.className = 'error-text';
-      statusEl.textContent = 'Не вдалося надіслати. Спробуйте ще раз.';
+      statusEl.textContent = err.message || 'Не вдалося надіслати. Спробуйте ще раз.';
+    } finally {
+      container.querySelector('#hw-submit').disabled = false;
     }
   });
 }

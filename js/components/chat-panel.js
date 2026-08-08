@@ -1,5 +1,5 @@
-import { supabase } from '../supabaseClient.js';
 import { getOrCreateThread, fetchMessages, sendMessage, markThreadRead, subscribeToThreadMessages, fetchUnreadCounts } from '../chat.js';
+import { uploadPrivateFile, openPrivateFile, isPrivateFileRef } from '../r2-files.js';
 
 // Монтує незалежний модуль чату в container. lessons — масив уроків курсу.
 // Перемикач уроків тут СВІЙ, окремий від відео вище (п.10 ТЗ):
@@ -59,16 +59,44 @@ export function mountChatPanel(container, { courseId, studentId, lessons, viewer
 
       const bubble = document.createElement('div');
       bubble.className = 'msg ' + (m.kind === 'homework' ? 'homework' : m.sender_role === viewerRole ? 'mine' : 'theirs');
-      bubble.textContent = m.body || '';
+      if (m.body) {
+        const body = document.createElement('div');
+        body.textContent = m.body;
+        bubble.appendChild(body);
+      }
       if (m.attachment_url) {
-        const a = document.createElement('a');
-        a.href = m.attachment_url;
-        a.target = '_blank';
-        a.rel = 'noreferrer';
-        a.style.color = 'inherit';
-        a.style.display = 'block';
-        a.textContent = 'вкладення';
-        bubble.appendChild(a);
+        const actions = document.createElement('div');
+        actions.className = 'attachment-actions';
+
+        if (isPrivateFileRef(m.attachment_url)) {
+          for (const [label, download] of [['Відкрити', false], ['Завантажити', true]]) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'attachment-link';
+            button.textContent = label;
+            button.addEventListener('click', async () => {
+              button.disabled = true;
+              try {
+                await openPrivateFile(m.id, { download });
+              } catch (error) {
+                console.error('open attachment failed', error);
+                errorEl.textContent = 'Не вдалося відкрити файл. Спробуйте ще раз.';
+                errorEl.style.display = 'block';
+              } finally {
+                button.disabled = false;
+              }
+            });
+            actions.appendChild(button);
+          }
+        } else {
+          const link = document.createElement('a');
+          link.href = m.attachment_url;
+          link.target = '_blank';
+          link.rel = 'noreferrer';
+          link.textContent = 'Відкрити вкладення';
+          actions.appendChild(link);
+        }
+        bubble.appendChild(actions);
       }
       wrap.appendChild(bubble);
       messagesEl.appendChild(wrap);
@@ -119,19 +147,31 @@ export function mountChatPanel(container, { courseId, studentId, lessons, viewer
   async function handleAttach(e) {
     const file = e.target.files[0];
     if (!file || !state.threadId) return;
+    const uploadThreadId = state.threadId;
+    e.target.value = '';
     errorEl.style.display = 'none';
+    const sendButton = container.querySelector('#chat-send');
+    const originalText = sendButton.textContent;
+    sendButton.disabled = true;
     try {
-      const path = `${state.threadId}/${Date.now()}-${file.name}`;
-      const { error: uploadError } = await supabase.storage.from('chat-attachments').upload(path, file);
-      if (uploadError) throw uploadError;
-      const { data: pub } = supabase.storage.from('chat-attachments').getPublicUrl(path);
-      const id = await sendMessage({ threadId: state.threadId, senderRole: viewerRole, body: '', attachmentUrl: pub.publicUrl });
-      state.messages.push({ id, sender_role: viewerRole, kind: 'message', body: '', attachment_url: pub.publicUrl });
-      renderMessages();
+      const attachmentUrl = await uploadPrivateFile({
+        threadId: uploadThreadId,
+        file,
+        kind: 'chat',
+        onProgress: (progress) => { sendButton.textContent = `${Math.round(progress * 100)}%`; },
+      });
+      const id = await sendMessage({ threadId: uploadThreadId, senderRole: viewerRole, body: file.name, attachmentUrl });
+      if (state.threadId === uploadThreadId && !state.messages.some((message) => message.id === id)) {
+        state.messages.push({ id, sender_role: viewerRole, kind: 'message', body: file.name, attachment_url: attachmentUrl });
+        renderMessages();
+      }
     } catch (err) {
       console.error('attach failed', err);
-      errorEl.textContent = 'Не вдалося надіслати файл.';
+      errorEl.textContent = err.message || 'Не вдалося надіслати файл.';
       errorEl.style.display = 'block';
+    } finally {
+      sendButton.disabled = false;
+      sendButton.textContent = originalText;
     }
   }
 

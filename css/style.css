@@ -111,6 +111,18 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
 .msg.homework { background: var(--homework-bg); border: 1px solid var(--homework-border); color: var(--homework-text); }
 .msg-label { font-size: 10px; color: #a35b00; margin: 0 0 2px; }
 
+.attachment-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.attachment-actions a,
+.attachment-link {
+  border: 0; padding: 0; background: none; color: inherit; cursor: pointer;
+  font: inherit; text-decoration: underline;
+}
+.attachment-link:disabled { opacity: .55; cursor: wait; }
+.homework-description {
+  white-space: pre-wrap; background: var(--surface-2); border-radius: 8px;
+  padding: 10px; margin: 0 0 10px; font-size: 13px;
+}
+
 .chat-input-row { display: flex; gap: 6px; align-items: center; margin-top: 8px; }
 .chat-input-row input[type="text"] { flex: 1; }
 

@@ -64,7 +64,7 @@ function renderLesson() {
 
   document.getElementById('lesson-description').textContent = lesson?.description || 'Опис ще не додано.';
 
-  mountHomeworkField(document.getElementById('homework-container'), { lesson, studentId, courseId });
+  mountHomeworkField(document.getElementById('homework-container'), { lesson, studentId, courseId, readOnly: isAdminView });
 }
 
 renderStrip();
