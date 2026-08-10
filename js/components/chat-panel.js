@@ -1,5 +1,5 @@
-import { getOrCreateThread, fetchMessages, sendMessage, markThreadRead, subscribeToThreadMessages, fetchUnreadCounts } from '../chat.js?v=20260810-6';
-import { uploadPrivateFile, openPrivateFile, isPrivateFileRef, getPrivateFilePreviewUrl, attachmentKind } from '../r2-files.js?v=20260810-6';
+import { getOrCreateThread, fetchMessages, sendMessage, markThreadRead, subscribeToThreadMessages, fetchUnreadCounts } from '../chat.js?v=20260810-7';
+import { uploadPrivateFile, openPrivateFile, isPrivateFileRef, getPrivateFilePreviewUrl, attachmentKind } from '../r2-files.js?v=20260810-7';
 
 // Монтує незалежний модуль чату в container. lessons — масив уроків курсу.
 // Перемикач уроків тут СВІЙ, окремий від відео вище (п.10 ТЗ):
@@ -16,7 +16,7 @@ export function mountChatPanel(container, { courseId, studentId, lessons, viewer
     <div class="msg-list" id="chat-messages"></div>
     <p class="error-text" id="chat-error" style="display:none;"></p>
     <div class="chat-input-row">
-      <label style="cursor:pointer;font-size:16px;">📎<input type="file" id="chat-attach" style="display:none;" /></label>
+      <label style="cursor:pointer;font-size:16px;">📎<input type="file" id="chat-attach" multiple style="display:none;" /></label>
       <input type="text" id="chat-draft" placeholder="Повідомлення" />
       <button id="chat-send" class="btn">Надіслати</button>
     </div>
@@ -236,35 +236,46 @@ export function mountChatPanel(container, { courseId, studentId, lessons, viewer
     }
   }
 
+  // Файлів може бути кілька. Вантажимо їх по черзі, а не всі разом: паралельні
+  // вивантаження великих відео забивають канал і збивають лічильник відсотків.
+  // Кожен файл їде окремим повідомленням, тому впав один — решта все одно дійде.
   async function handleAttach(e) {
-    const file = e.target.files[0];
-    if (!file || !state.threadId) return;
+    const files = Array.from(e.target.files || []);
+    if (!files.length || !state.threadId) return;
     const uploadThreadId = state.threadId;
     e.target.value = '';
     errorEl.style.display = 'none';
     const sendButton = container.querySelector('#chat-send');
     const originalText = sendButton.textContent;
     sendButton.disabled = true;
-    try {
-      const attachmentUrl = await uploadPrivateFile({
-        threadId: uploadThreadId,
-        file,
-        kind: 'chat',
-        onProgress: (progress) => { sendButton.textContent = `${Math.round(progress * 100)}%`; },
-      });
-      const id = await sendMessage({ threadId: uploadThreadId, senderRole: viewerRole, body: file.name, attachmentUrl });
-      if (state.threadId === uploadThreadId && !state.messages.some((message) => message.id === id)) {
-        state.messages.push({ id, sender_role: viewerRole, kind: 'message', body: file.name, attachment_url: attachmentUrl });
-        renderMessages();
+    const failed = [];
+
+    for (const [index, file] of files.entries()) {
+      const counter = files.length > 1 ? `${index + 1}/${files.length} · ` : '';
+      try {
+        const attachmentUrl = await uploadPrivateFile({
+          threadId: uploadThreadId,
+          file,
+          kind: 'chat',
+          onProgress: (progress) => { sendButton.textContent = `${counter}${Math.round(progress * 100)}%`; },
+        });
+        const id = await sendMessage({ threadId: uploadThreadId, senderRole: viewerRole, body: file.name, attachmentUrl });
+        if (state.threadId === uploadThreadId && !state.messages.some((message) => message.id === id)) {
+          state.messages.push({ id, sender_role: viewerRole, kind: 'message', body: file.name, attachment_url: attachmentUrl });
+          renderMessages();
+        }
+      } catch (err) {
+        console.error('attach failed', err);
+        failed.push(file.name);
       }
-    } catch (err) {
-      console.error('attach failed', err);
-      errorEl.textContent = err.message || 'Не вдалося надіслати файл.';
-      errorEl.style.display = 'block';
-    } finally {
-      sendButton.disabled = false;
-      sendButton.textContent = originalText;
     }
+
+    if (failed.length) {
+      errorEl.textContent = `Не вдалося надіслати: ${failed.join(', ')}. Спробуйте ще раз.`;
+      errorEl.style.display = 'block';
+    }
+    sendButton.disabled = false;
+    sendButton.textContent = originalText;
   }
 
   container.querySelector('#chat-send').addEventListener('click', handleSend);

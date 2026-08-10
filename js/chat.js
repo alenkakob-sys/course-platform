@@ -1,5 +1,5 @@
-import { supabase } from './supabaseClient.js?v=20260810-6';
-import { FUNCTIONS_URL } from './config.js?v=20260810-6';
+import { supabase } from './supabaseClient.js?v=20260810-7';
+import { FUNCTIONS_URL } from './config.js?v=20260810-7';
 
 // Кожна пара (учениця, курс, урок|null="Загальний") -> окремий приватний
 // тред (п.5 ТЗ). Створюється лінькво, при першому відкритті вкладки.
