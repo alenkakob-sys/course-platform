@@ -1,5 +1,5 @@
-import { supabase } from './supabaseClient.js';
-import { FUNCTIONS_URL } from './config.js';
+import { supabase } from './supabaseClient.js?v=20260810-6';
+import { FUNCTIONS_URL } from './config.js?v=20260810-6';
 
 async function authenticatedRequest(path, body) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -114,6 +114,31 @@ export async function uploadPrivateFile({ threadId, file, kind = 'chat', onProgr
 
 export async function getPrivateFileUrl(messageId, { download = false } = {}) {
   return authenticatedRequest('r2-download-url', { messageId, download });
+}
+
+// Підписане посилання живе 5 хвилин. Кешуємо його на цей час, щоб перемикання
+// вкладок чату туди-сюди не замовляло нове посилання на кожен показ картинки:
+// кожне замовлення — це виклик серверної функції, а вони не безкоштовні.
+const previewUrlCache = new Map();
+
+export async function getPrivateFilePreviewUrl(messageId) {
+  const cached = previewUrlCache.get(messageId);
+  if (cached && cached.expiresAt > Date.now() + 30_000) return cached.url;
+  const { url, expiresIn } = await getPrivateFileUrl(messageId);
+  previewUrlCache.set(messageId, { url, expiresAt: Date.now() + ((expiresIn || 300) * 1000) });
+  return url;
+}
+
+const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'avif', 'bmp'];
+const VIDEO_EXTENSIONS = ['mp4', 'mov', 'm4v', 'webm', 'ogv'];
+
+// Тип визначаємо за розширенням у назві файлу: у повідомленні чату
+// зберігається саме вона, окремого поля з типом у базі немає.
+export function attachmentKind(fileName) {
+  const extension = String(fileName || '').split('.').pop().toLowerCase();
+  if (IMAGE_EXTENSIONS.includes(extension)) return 'image';
+  if (VIDEO_EXTENSIONS.includes(extension)) return 'video';
+  return 'file';
 }
 
 export async function openPrivateFile(messageId, { download = false } = {}) {

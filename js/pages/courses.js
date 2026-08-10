@@ -1,6 +1,6 @@
-import { supabase } from '../supabaseClient.js';
-import { requireAuth, wireLogoutButton } from '../auth.js';
-import { fetchUnreadCounts } from '../chat.js';
+import { supabase } from '../supabaseClient.js?v=20260810-6';
+import { requireAuth, wireLogoutButton } from '../auth.js?v=20260810-6';
+import { fetchUnreadCounts } from '../chat.js?v=20260810-6';
 
 const result = await requireAuth();
 if (result) {

@@ -1,5 +1,5 @@
-import { supabase } from '../supabaseClient.js';
-import { requireAdmin, wireLogoutButton } from '../auth.js';
+import { supabase } from '../supabaseClient.js?v=20260810-6';
+import { requireAdmin, wireLogoutButton } from '../auth.js?v=20260810-6';
 
 const auth = await requireAdmin();
 if (!auth) throw new Error('not admin');

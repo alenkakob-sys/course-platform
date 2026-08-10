@@ -1,5 +1,5 @@
-import { getOrCreateThread, fetchMessages, sendMessage, markThreadRead, subscribeToThreadMessages, fetchUnreadCounts } from '../chat.js';
-import { uploadPrivateFile, openPrivateFile, isPrivateFileRef } from '../r2-files.js';
+import { getOrCreateThread, fetchMessages, sendMessage, markThreadRead, subscribeToThreadMessages, fetchUnreadCounts } from '../chat.js?v=20260810-6';
+import { uploadPrivateFile, openPrivateFile, isPrivateFileRef, getPrivateFilePreviewUrl, attachmentKind } from '../r2-files.js?v=20260810-6';
 
 // Монтує незалежний модуль чату в container. lessons — масив уроків курсу.
 // Перемикач уроків тут СВІЙ, окремий від відео вище (п.10 ТЗ):
@@ -62,17 +62,30 @@ export function mountChatPanel(container, { courseId, studentId, lessons, viewer
 
       const bubble = document.createElement('div');
       bubble.className = 'msg ' + (m.kind === 'homework' ? 'homework' : m.sender_role === viewerRole ? 'mine' : 'theirs');
+      const privateAttachment = m.attachment_url && isPrivateFileRef(m.attachment_url);
+      const kind = privateAttachment ? attachmentKind(m.body) : 'file';
+      const showsPreview = kind === 'image' || kind === 'video';
+
+      // Для картинки чи відео підпис — це просто назва файлу, а сам файл видно
+      // поруч. Друкуємо її дрібним рядком, щоб не забивала бульбашку.
       if (m.body) {
         const body = document.createElement('div');
         body.textContent = m.body;
+        if (showsPreview) body.className = 'attachment-name';
         bubble.appendChild(body);
       }
+
       if (m.attachment_url) {
+        if (kind === 'image') bubble.appendChild(buildImagePreview(m));
+        if (kind === 'video') bubble.appendChild(buildVideoPreview(m));
+
         const actions = document.createElement('div');
         actions.className = 'attachment-actions';
 
-        if (isPrivateFileRef(m.attachment_url)) {
-          for (const [label, download] of [['Відкрити', false], ['Завантажити', true]]) {
+        if (privateAttachment) {
+          // «Відкрити» лишається тільки там, де показати всередині чату нічим.
+          const buttons = showsPreview ? [['Завантажити', true]] : [['Відкрити', false], ['Завантажити', true]];
+          for (const [label, download] of buttons) {
             const button = document.createElement('button');
             button.type = 'button';
             button.className = 'attachment-link';
@@ -105,6 +118,82 @@ export function mountChatPanel(container, { courseId, studentId, lessons, viewer
       messagesEl.appendChild(wrap);
     }
     messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  // Картинку замовляємо не одразу для всієї стрічки, а коли вона підходить до
+  // видимої частини чату: у старому треді може бути сто фото ДЗ, і сто запитів
+  // на посилання при кожному відкритті — це і довго, і платно.
+  const previewObserver = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      previewObserver.unobserve(entry.target);
+      entry.target.dispatchEvent(new CustomEvent('preview-needed'));
+    }
+  }, { root: messagesEl, rootMargin: '200px' });
+
+  function previewFailed(box, messageId) {
+    box.classList.remove('loading');
+    box.classList.add('failed');
+    box.textContent = '';
+    const retry = document.createElement('button');
+    retry.type = 'button';
+    retry.className = 'attachment-link';
+    retry.textContent = 'Не вдалося показати — відкрити окремо';
+    retry.addEventListener('click', () => openPrivateFile(messageId).catch(() => {}));
+    box.appendChild(retry);
+  }
+
+  function buildImagePreview(message) {
+    const box = document.createElement('div');
+    box.className = 'attachment-preview loading';
+    box.addEventListener('preview-needed', async () => {
+      try {
+        const url = await getPrivateFilePreviewUrl(message.id);
+        const image = document.createElement('img');
+        image.alt = message.body || 'Вкладення';
+        image.addEventListener('load', () => box.classList.remove('loading'), { once: true });
+        image.addEventListener('error', () => previewFailed(box, message.id), { once: true });
+        image.src = url;
+        box.appendChild(image);
+        box.addEventListener('click', () => openLightbox(url, message.body));
+      } catch (error) {
+        console.error('preview failed', error);
+        previewFailed(box, message.id);
+      }
+    }, { once: true });
+    previewObserver.observe(box);
+    return box;
+  }
+
+  // Відео не вантажимо самі: показуємо кнопку, і програвач зʼявляється лише
+  // тоді, коли його справді хочуть подивитись.
+  function buildVideoPreview(message) {
+    const box = document.createElement('div');
+    box.className = 'attachment-preview attachment-video';
+    const play = document.createElement('button');
+    play.type = 'button';
+    play.className = 'attachment-play';
+    play.setAttribute('aria-label', `Увімкнути відео${message.body ? `: ${message.body}` : ''}`);
+    play.addEventListener('click', async () => {
+      play.disabled = true;
+      box.classList.add('loading');
+      try {
+        const url = await getPrivateFilePreviewUrl(message.id);
+        const video = document.createElement('video');
+        video.controls = true;
+        video.playsInline = true;
+        video.autoplay = true;
+        video.preload = 'metadata';
+        video.src = url;
+        box.classList.remove('loading');
+        box.replaceChildren(video);
+      } catch (error) {
+        console.error('preview failed', error);
+        previewFailed(box, message.id);
+      }
+    });
+    box.appendChild(play);
+    return box;
   }
 
   async function openThread(lessonId) {
@@ -185,6 +274,29 @@ export function mountChatPanel(container, { courseId, studentId, lessons, viewer
   openThread(validInitialLesson);
 
   return () => unsubscribe(); // викликати при демонтажі, якщо колись знадобиться
+}
+
+// Фото на весь екран: у бульбашці воно дрібне, а розглядати треба саме роботу.
+function openLightbox(url, caption) {
+  const overlay = document.createElement('div');
+  overlay.className = 'lightbox';
+  overlay.innerHTML = `
+    <button class="lightbox-close" type="button" aria-label="Закрити">✕</button>
+    <img alt="${escapeHtml(caption || 'Вкладення')}" />
+  `;
+  overlay.querySelector('img').src = url;
+
+  const close = () => {
+    overlay.remove();
+    document.removeEventListener('keydown', onKey);
+  };
+  const onKey = (event) => { if (event.key === 'Escape') close(); };
+
+  overlay.addEventListener('click', (event) => {
+    if (event.target === overlay || event.target.closest('.lightbox-close')) close();
+  });
+  document.addEventListener('keydown', onKey);
+  document.body.appendChild(overlay);
 }
 
 function escapeHtml(str) {

@@ -183,6 +183,46 @@ button.btn-dashed { border: 1px dashed var(--accent); color: var(--accent); back
 .homework-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .homework-actions .btn { flex: 1 1 auto; min-width: 140px; text-align: center; cursor: pointer; }
 
+/* Вкладення видно просто в чаті: фото — картинкою, відео — програвачем. */
+.attachment-name { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; overflow-wrap: anywhere; }
+.attachment-preview {
+  position: relative; margin-top: 2px; border-radius: 10px; overflow: hidden;
+  background: #000; min-height: 60px; max-width: 320px;
+}
+.attachment-preview img { display: block; width: 100%; max-height: 340px; object-fit: cover; cursor: zoom-in; }
+.attachment-preview video { display: block; width: 100%; max-height: 340px; background: #000; }
+.attachment-preview.loading { min-height: 150px; background: var(--surface-3); }
+.attachment-preview.loading::after {
+  content: ''; position: absolute; inset: 0; margin: auto; width: 22px; height: 22px;
+  border: 2px solid rgba(255,255,255,.25); border-top-color: var(--accent);
+  border-radius: 50%; animation: attachmentSpin .7s linear infinite;
+}
+@keyframes attachmentSpin { to { transform: rotate(360deg); } }
+.attachment-preview.failed { min-height: 0; background: none; padding: 4px 0; }
+.attachment-video { min-height: 150px; background: var(--surface-3); }
+.attachment-play {
+  position: absolute; inset: 0; width: 100%; height: 100%; border: 0;
+  background: none; cursor: pointer;
+}
+.attachment-play::after {
+  content: ''; position: absolute; inset: 0; margin: auto; width: 0; height: 0;
+  border-left: 20px solid #fff; border-top: 13px solid transparent; border-bottom: 13px solid transparent;
+  transform: translateX(3px);
+}
+.attachment-play:hover::after { border-left-color: var(--accent); }
+
+.lightbox {
+  position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center;
+  padding: 24px; background: rgba(8, 10, 12, .92); backdrop-filter: blur(3px);
+}
+.lightbox img { max-width: 100%; max-height: 100%; border-radius: 10px; }
+.lightbox-close {
+  position: absolute; top: 14px; right: 14px; width: 40px; height: 40px;
+  border: 0; border-radius: 10px; background: rgba(255,255,255,.12); color: #fff;
+  font-size: 17px; cursor: pointer;
+}
+.lightbox-close:hover { background: rgba(255,255,255,.22); }
+
 .attachment-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 7px; }
 .attachment-actions a,
 .attachment-link {
