@@ -132,7 +132,6 @@ function renderLessonList() {
   }
 
   for (const lesson of filtered) {
-    const actualIndex = lessons.findIndex((item) => item.id === lesson.id);
     const card = document.createElement('article');
     card.className = `admin-lesson-card${lesson.id === selectedLessonId ? ' active' : ''}${lesson.parent_lesson_id ? ' child' : ''}`;
     card.draggable = !query;
@@ -140,18 +139,8 @@ function renderLessonList() {
     card.innerHTML = `
       <span class="admin-drag" title="Перетягнути">⠿</span>
       <div><h3>${escapeHtml(lesson.short_label ? `${lesson.short_label} · ${lesson.title}` : lesson.title)}</h3><p>${lesson.videos.length} відео · ${lesson.homework_enabled ? 'є ДЗ' : 'без ДЗ'}</p></div>
-      <span class="admin-move-controls">
-        <button data-move="up" title="Вище" ${actualIndex === 0 ? 'disabled' : ''}>↑</button>
-        <button data-move="down" title="Нижче" ${actualIndex === lessons.length - 1 ? 'disabled' : ''}>↓</button>
-      </span>
     `;
     card.addEventListener('click', () => selectLesson(lesson.id));
-    card.querySelectorAll('[data-move]').forEach((button) => {
-      button.addEventListener('click', (event) => {
-        event.stopPropagation();
-        moveLesson(actualIndex, button.dataset.move === 'up' ? -1 : 1);
-      });
-    });
     card.addEventListener('dragstart', () => { draggedLessonId = lesson.id; card.style.opacity = '.45'; });
     card.addEventListener('dragend', () => { draggedLessonId = null; card.style.opacity = ''; });
     card.addEventListener('dragover', (event) => { if (draggedLessonId && draggedLessonId !== lesson.id) event.preventDefault(); });
@@ -232,7 +221,7 @@ function renderComparison() {
       </div>
       <div class="admin-comparison-section">
         <div class="admin-table-videos"></div>
-        <div class="admin-table-add-video"><input type="text" data-table-new-video placeholder="YouTube-посилання" /><button type="button">＋</button><button class="admin-secondary admin-upload-icon" data-table-upload-video type="button" title="Завантажити відеофайл">⇧</button></div>
+        <div class="admin-table-add-video"><input type="text" data-table-new-video placeholder="YouTube-посилання, Enter" /><button class="admin-secondary admin-upload-icon" data-table-upload-video type="button" title="Завантажити відеофайл">⇧</button></div>
         <div class="admin-table-presentation"><label>Презентація<input type="url" data-table-field="presentation_url" placeholder="Посилання" value="${escapeAttribute(lesson.presentation_url || '')}" /></label><button class="admin-secondary admin-upload-icon" data-table-upload-presentation type="button" title="Завантажити презентацію">⇧</button></div>
       </div>
       <div class="admin-comparison-section">
@@ -309,9 +298,7 @@ function renderComparison() {
       });
     });
 
-    const addVideoButton = card.querySelector('.admin-table-add-video button');
     const addVideoInput = card.querySelector('[data-table-new-video]');
-    addVideoButton.addEventListener('click', () => addVideoToLesson(lesson, addVideoInput));
     addVideoInput.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') { event.preventDefault(); addVideoToLesson(lesson, addVideoInput); }
     });
@@ -578,15 +565,6 @@ document.getElementById('delete-lesson').addEventListener('click', async () => {
   await load();
 });
 
-async function moveLesson(index, direction) {
-  const target = index + direction;
-  if (target < 0 || target >= lessons.length) return;
-  await flushPending();
-  const next = [...lessons];
-  [next[index], next[target]] = [next[target], next[index]];
-  await persistLessonOrder(next);
-}
-
 async function reorderLesson(sourceId, targetId) {
   const sourceIndex = lessons.findIndex((lesson) => lesson.id === sourceId);
   const targetIndex = lessons.findIndex((lesson) => lesson.id === targetId);
@@ -610,12 +588,6 @@ async function persistLessonOrder(next) {
   });
 }
 
-document.getElementById('add-video').addEventListener('click', async () => {
-  const lesson = selectedLesson();
-  if (!lesson) return;
-  await addVideoToLesson(lesson, elements.newVideo);
-});
-
 async function addVideoToLesson(lesson, input) {
   const youtubeId = extractYoutubeId(input.value);
   if (!youtubeId) return;
@@ -637,11 +609,11 @@ async function addVideoToLesson(lesson, input) {
   await load();
 }
 
-elements.newVideo.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter') {
-    event.preventDefault();
-    document.getElementById('add-video').click();
-  }
+elements.newVideo.addEventListener('keydown', async (event) => {
+  if (event.key !== 'Enter') return;
+  event.preventDefault();
+  const lesson = selectedLesson();
+  if (lesson) await addVideoToLesson(lesson, elements.newVideo);
 });
 
 async function deleteVideo(videoId) {
