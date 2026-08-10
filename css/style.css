@@ -22,6 +22,11 @@
 
 * { box-sizing: border-box; }
 
+/* Обов'язково !important: будь-яке наше правило з display (наприклад
+   .material-row{display:flex}) перебиває вбудований display:none атрибута
+   hidden — і блок, який код сховав, усе одно лишається на екрані. */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -100,6 +105,22 @@ button.btn-dashed { border: 1px dashed var(--accent); color: var(--accent); back
 
 .video-box { aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; background: #000; }
 .video-box iframe { width: 100%; height: 100%; border: 0; }
+
+/* Обкладинка замість плеєра, доки відео не ввімкнули. */
+.video-cover { display: block; width: 100%; height: 100%; padding: 0; border: 0; background: #000; cursor: pointer; position: relative; }
+.video-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.video-cover-play {
+  position: absolute; inset: 0; margin: auto; width: 66px; height: 66px; border-radius: 50%;
+  background: rgba(20, 22, 25, .72) center/0 0 no-repeat; backdrop-filter: blur(2px);
+  transition: background-color .16s, transform .16s;
+}
+.video-cover-play::after {
+  content: ''; position: absolute; inset: 0; margin: auto; width: 0; height: 0;
+  border-left: 20px solid #fff; border-top: 13px solid transparent; border-bottom: 13px solid transparent;
+  transform: translateX(3px);
+}
+.video-cover:hover .video-cover-play { background-color: var(--accent); transform: scale(1.05); }
+.video-cover:hover .video-cover-play::after { border-left-color: var(--accent-ink); }
 .video-selector { display: flex; gap: 7px; overflow-x: auto; padding: 10px 0 0; }
 .video-selector[hidden] { display: none; }
 .video-selector button {
@@ -574,7 +595,7 @@ button.btn-dashed { border: 1px dashed var(--accent); color: var(--accent); back
    рівно одна лінія: між трьома колонками, бо вона єдина щось означає. */
 /* Третій стовпчик ширший за середній: у ньому в один рядок мусять поміститись
    перемикач ДЗ і три прапорці формату. Відео потребує найменше місця. */
-.admin-comparison-card { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,.7fr) minmax(0,1.15fr); border: 0; border-radius: 12px; background: rgba(31,35,39,.82); overflow: hidden; }
+.admin-comparison-card { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,.7fr) minmax(0,1.15fr); border: 1px solid var(--admin-gold); border-radius: 12px; background: rgba(31,35,39,.82); overflow: hidden; }
 .admin-comparison-section { min-width: 0; padding: 15px 16px; }
 .admin-comparison-section + .admin-comparison-section { border-left: 1px solid var(--admin-line); }
 .admin-comparison-card label { display: block; color: var(--admin-muted); font-size: 12px; }

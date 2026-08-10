@@ -150,7 +150,7 @@ async function renderLesson() {
       videoBox.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#999;font-size:13px;">Не вдалося відкрити відео</div>`;
     }
   } else if (video?.youtube_id) {
-    videoBox.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${video.youtube_id}?rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+    mountYoutube(videoBox, video.youtube_id, video.title);
   } else {
     videoBox.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#999;font-size:13px;">Відео ще не додано</div>`;
   }
@@ -217,6 +217,35 @@ function wirePresentationLinks({ link, downloadButton, url, fileKey, fileName })
   downloadButton.onclick = async () => {
     try { await openCourseAsset({ courseId, objectKey: fileKey, fileName, download: true }); } catch (error) { alert(error.message); }
   };
+}
+
+// Спершу показуємо саму обкладинку відео, а плеєр YouTube вставляємо аж після
+// натискання. Доти на екрані немає ні аватарки, ні кнопки «Дивитися на
+// YouTube», ні значка «поділитися» — вони частина самого плеєра, і сховати їх
+// параметрами не можна. Заразом сторінка відкривається швидше: важкий плеєр
+// вантажиться лише для того відео, яке справді вмикають.
+function mountYoutube(videoBox, youtubeId, title) {
+  const id = String(youtubeId).replace(/[^\w-]/g, '');
+  videoBox.innerHTML = `
+    <button class="video-cover" type="button" aria-label="Увімкнути відео${title ? `: ${escapeHtml(title)}` : ''}">
+      <img src="https://i.ytimg.com/vi/${id}/maxresdefault.jpg" alt="" loading="lazy" />
+      <span class="video-cover-play" aria-hidden="true"></span>
+    </button>
+  `;
+  const cover = videoBox.querySelector('.video-cover');
+  // Не в кожного відео є обкладинка максимальної якості — тоді беремо звичайну.
+  cover.querySelector('img').addEventListener('error', (event) => {
+    event.target.src = `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+  }, { once: true });
+  cover.addEventListener('click', () => {
+    videoBox.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${id}?rel=0&autoplay=1&playsinline=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+  });
+}
+
+function escapeHtml(value) {
+  const div = document.createElement('div');
+  div.textContent = value || '';
+  return div.innerHTML;
 }
 
 function escapeAttribute(value) {
