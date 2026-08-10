@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Курс</title>
-<link rel="stylesheet" href="css/style.css?v=20260810-2" />
+<link rel="stylesheet" href="css/style.css?v=20260810-4" />
 </head>
 <body>
 <div class="page">
@@ -16,40 +16,39 @@
     </div>
   </div>
 
-  <div id="presentation-block" style="display:none;margin-bottom:12px;">
-    <a id="presentation-link" target="_blank" rel="noreferrer" style="display:block;padding:10px 12px;background:var(--surface-2);border-radius:8px;font-size:13px;text-decoration:none;">Презентація курсу →</a>
-    <button id="presentation-download" class="icon-btn" type="button" style="margin-top:6px;display:none;">Завантажити</button>
+  <div id="presentation-block" class="material-row" hidden>
+    <a id="presentation-link" class="material-link" target="_blank" rel="noreferrer">Презентація курсу</a>
+    <button id="presentation-download" class="icon-btn" type="button" title="Завантажити" hidden>↓</button>
   </div>
 
   <div class="lesson-strip" id="lesson-strip"></div>
 
-  <div id="video-block">
-    <div class="video-box" id="video-box"></div>
-    <div class="video-selector" id="video-selector" hidden></div>
-    <p class="muted" style="font-size:11px;margin:6px 0 16px;">Розгортається на весь екран при повороті екрана</p>
+  <div class="video-box" id="video-box"></div>
+  <div class="video-selector" id="video-selector" hidden></div>
 
-    <div id="lesson-presentation-block" style="display:none;margin:0 0 12px;">
-      <a id="lesson-presentation-link" target="_blank" rel="noreferrer" style="display:block;padding:10px 12px;background:var(--surface-2);border-radius:8px;font-size:13px;text-decoration:none;">Презентація уроку →</a>
-      <button id="lesson-presentation-download" class="icon-btn" type="button" style="margin-top:6px;display:none;">Завантажити</button>
-    </div>
+  <div id="lesson-presentation-block" class="material-row" style="margin-top:14px;" hidden>
+    <a id="lesson-presentation-link" class="material-link" target="_blank" rel="noreferrer">Презентація уроку</a>
+    <button id="lesson-presentation-download" class="icon-btn" type="button" title="Завантажити" hidden>↓</button>
+  </div>
 
-    <details class="accordion">
+  <div style="margin-top:16px;">
+    <details class="section-card" id="description-block" open hidden>
       <summary>Опис уроку</summary>
-      <div class="body" id="lesson-description"></div>
+      <div class="section-body text" id="lesson-description"></div>
     </details>
 
-    <details class="accordion">
+    <details class="section-card" id="homework-block" open hidden>
       <summary>Домашнє завдання</summary>
-      <div class="body" id="homework-container"></div>
+      <div class="section-body" id="homework-container"></div>
     </details>
 
-    <details class="accordion" open>
-      <summary>Чат <span class="muted" style="font-weight:400;">· незалежний</span></summary>
-      <div class="body" id="chat-container"></div>
-    </details>
+    <section class="section-card">
+      <div class="section-head">Чат</div>
+      <div class="section-body" id="chat-container"></div>
+    </section>
   </div>
 </div>
 
-<script type="module" src="js/pages/course.js?v=20260808-7"></script>
+<script type="module" src="js/pages/course.js?v=20260810-4"></script>
 </body>
 </html>

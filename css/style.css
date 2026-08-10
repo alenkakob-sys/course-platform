@@ -1,124 +1,168 @@
-/* М'яка нейтральна палітра, високий контраст тексту для читабельності. */
+/* --------------------------------------------------------------------------
+   Сторінки учениці. Та сама темна палітра, що й в адмінці: один застосунок —
+   один вигляд. Межі показуємо тлом і відступами, лінія лишається тільки там,
+   де щось означає.
+   -------------------------------------------------------------------------- */
 :root {
-  --bg: #FAF9F6;
-  --surface: #FFFFFF;
-  --surface-2: #F1EFEA;
-  --border: #E4E1DA;
-  --text: #2B2A28;
-  --text-muted: #6B6862;
-  --accent: #4A5A52;       /* приглушений шавлієвий/зелений */
-  --accent-bg: #E7ECE9;
-  --accent-text: #33443C;
-  --danger: #B23B3B;
-  --homework-bg: #FBF3E4;
-  --homework-border: #E9D9B8;
-  --homework-text: #5C4A22;
+  --bg: #171a1d;
+  --surface: #202428;
+  --surface-2: #282d32;
+  --surface-3: #333940;
+  --line: rgba(255, 255, 255, .07);
+  --field-bg: #1b1f23;
+  --text: #f2f3f4;
+  --text-muted: #aeb4ba;
+  --accent: #e6a900;
+  --accent-soft: rgba(230, 169, 0, .14);
+  --accent-ink: #17191b;
+  --danger: #ff8585;
+  --homework-bg: rgba(230, 169, 0, .1);
+  --homework-text: #f0dcae;
 }
 
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
-  background: var(--bg);
+  min-height: 100vh;
+  background: radial-gradient(circle at 75% -20%, #2b3035 0, var(--bg) 42%);
   color: var(--text);
   font-family: -apple-system, "Segoe UI", Arial, sans-serif;
   font-size: 15px;
   line-height: 1.5;
 }
 
-.page {
-  max-width: 460px;
-  margin: 0 auto;
-  padding: 16px;
-}
+.page { max-width: 620px; margin: 0 auto; padding: 18px 16px 40px; }
 
 a { color: inherit; }
 
-.topbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 12px;
+.topbar { display: flex; align-items: center; gap: 10px; padding: 4px 0 16px; }
+.topbar .title { flex: 1; min-width: 0; font-size: 18px; font-weight: 700; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.topbar .subtitle { font-size: 13px; color: var(--text-muted); margin: 3px 0 0; }
+.icon-btn {
+  width: 36px; height: 36px; flex: 0 0 36px; display: grid; place-items: center;
+  border: 0; border-radius: 9px; background: var(--surface-2); color: var(--text);
+  font-size: 17px; cursor: pointer;
 }
-.topbar .title { flex: 1; min-width: 0; font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.topbar .subtitle { font-size: 12px; color: var(--text-muted); margin: 2px 0 0; }
-.icon-btn { border: none; background: none; cursor: pointer; font-size: 18px; padding: 4px; color: var(--text); }
+.icon-btn:hover { background: var(--surface-3); }
 
-.h1 { font-size: 18px; font-weight: 500; margin: 0 0 16px; }
+.h1 { font-size: 26px; font-weight: 700; letter-spacing: -.02em; margin: 0 0 18px; }
 .row-between { display: flex; justify-content: space-between; align-items: center; }
 .muted { color: var(--text-muted); }
-.link { color: var(--text); font-size: 13px; text-decoration: underline; cursor: pointer; }
+.link { color: var(--text-muted); font-size: 13px; background: none; border: 0; cursor: pointer; }
+.link:hover { color: var(--text); }
 
+/* Картка курсу у списку «Мої курси». */
 .card-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: 12px 10px; border-bottom: 1px solid var(--border); cursor: pointer;
+  display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
+  padding: 18px 18px; border: 0; border-radius: 12px;
+  background: var(--surface); cursor: pointer; transition: background .16s;
 }
+.card-row:hover { background: var(--surface-2); }
 
 .badge {
-  background: var(--danger); color: #fff; border-radius: 999px;
-  min-width: 18px; height: 18px; font-size: 11px; display: flex;
-  align-items: center; justify-content: center; padding: 0 4px;
+  background: var(--accent); color: var(--accent-ink); border-radius: 999px;
+  min-width: 22px; height: 22px; font-size: 12px; font-weight: 700; display: flex;
+  align-items: center; justify-content: center; padding: 0 7px;
 }
 
 input[type="text"], input[type="email"], textarea, select {
-  width: 100%; font-size: 14px; padding: 8px; border: 1px solid var(--border);
-  border-radius: 8px; background: var(--surface); color: var(--text); font-family: inherit;
+  width: 100%; font-size: 15px; padding: 12px; border: 1px solid transparent;
+  border-radius: 9px; background: var(--field-bg); color: var(--text); font-family: inherit;
+  outline: none; transition: background .18s, border-color .18s;
 }
-label.field-label { font-size: 12px; color: var(--text-muted); display: block; margin: 10px 0 4px; }
+input:hover, textarea:hover, select:hover { background: #242a2f; }
+input:focus, textarea:focus, select:focus { background: #262c32; border-color: rgba(255,255,255,.26); }
+::placeholder { color: #747c84; }
+textarea { resize: vertical; }
+label.field-label { font-size: 13px; color: var(--text-muted); display: block; margin: 12px 0 5px; }
 
 button.btn {
-  font-size: 14px; padding: 10px; border-radius: 8px; border: 1px solid var(--border);
-  background: var(--surface); cursor: pointer; color: var(--text);
+  font-size: 15px; padding: 13px; border-radius: 9px; border: 0;
+  background: var(--surface-2); cursor: pointer; color: var(--text);
 }
-button.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-button.btn-dashed { border-style: dashed; background: none; width: 100%; }
+button.btn:hover { background: var(--surface-3); }
+button.btn-primary { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+button.btn-primary:hover { filter: brightness(1.08); }
+button.btn-dashed { border: 1px dashed var(--accent); color: var(--accent); background: none; width: 100%; }
 
-.lesson-strip { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 12px; }
-.lesson-circle {
-  flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; border: none;
-  font-size: 11px; cursor: pointer; background: var(--surface-2); color: var(--text);
-  display: flex; align-items: center; justify-content: center;
+/* Стрічка уроків: назви словами, як вкладки чату, а не номери в кружечках. */
+.lesson-strip { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 16px; }
+.lesson-pill {
+  flex: 0 0 auto; max-width: 220px; border: 0; border-radius: 99px;
+  padding: 9px 16px; font-size: 13px; font-weight: 600; cursor: pointer;
+  background: var(--surface-2); color: var(--text); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; transition: background .16s;
 }
-.lesson-circle.active { background: var(--accent); color: #fff; }
+.lesson-pill:hover { background: var(--surface-3); }
+.lesson-pill.active { background: var(--accent); color: var(--accent-ink); }
+.lesson-pill.locked { background: transparent; color: #79818a; cursor: not-allowed; box-shadow: inset 0 0 0 1px var(--line); }
 
-.video-box {
-  aspect-ratio: 16/9; border-radius: 10px; overflow: hidden; background: #1E1D1B;
-}
+.video-box { aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; background: #000; }
 .video-box iframe { width: 100%; height: 100%; border: 0; }
-.video-selector { display: flex; gap: 6px; overflow-x: auto; padding: 8px 0 2px; }
+.video-selector { display: flex; gap: 7px; overflow-x: auto; padding: 10px 0 0; }
 .video-selector[hidden] { display: none; }
 .video-selector button {
-  flex: 0 0 auto; border: 1px solid var(--border); border-radius: 99px;
-  background: var(--surface); color: var(--text); padding: 6px 10px; font-size: 11px; cursor: pointer;
+  flex: 0 0 auto; border: 0; border-radius: 99px; background: var(--surface-2);
+  color: var(--text); padding: 7px 13px; font-size: 12.5px; cursor: pointer;
 }
-.video-selector button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.video-selector button.active { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
 
-.accordion { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; background: var(--surface); }
-.accordion > summary { padding: 10px; cursor: pointer; font-size: 13px; font-weight: 500; list-style: none; background: var(--surface-2); border-radius: 8px; }
-.accordion[open] > summary { border-radius: 8px 8px 0 0; }
-.accordion .body { padding: 10px; font-size: 13px; white-space: pre-wrap; }
+/* Посилання на презентацію — курсу або уроку. */
+.material-link {
+  display: flex; align-items: center; gap: 10px; padding: 14px 16px; margin-bottom: 10px;
+  border-radius: 12px; background: var(--surface); font-size: 14px; text-decoration: none;
+}
+.material-link:hover { background: var(--surface-2); }
+.material-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.material-row .material-link { flex: 1; margin: 0; }
 
-.chat-tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+/* Розділ уроку. Опис і ДЗ показуються лише коли вони справді є, і згортаються
+   в самий заголовок; чат видно завжди. */
+.section-card { border-radius: 12px; background: var(--surface); margin-bottom: 12px; overflow: hidden; }
+.section-card > summary,
+.section-head {
+  display: flex; align-items: center; gap: 10px; padding: 15px 17px;
+  font-size: 15px; font-weight: 600; list-style: none; cursor: pointer;
+}
+.section-head { cursor: default; }
+.section-card > summary::-webkit-details-marker { display: none; }
+.section-card > summary::after {
+  content: '⌃'; margin-left: auto; color: var(--text-muted);
+  transform: rotate(180deg); transition: transform .18s;
+}
+.section-card[open] > summary::after { transform: rotate(0deg); }
+.section-card > summary:hover { background: var(--surface-2); }
+.section-body { padding: 0 17px 17px; }
+.section-body.text { white-space: pre-wrap; color: #dfe3e6; }
+
+.chat-tabs { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 12px; }
 .chat-tab {
-  flex-shrink: 0; font-size: 11px; padding: 5px 10px; border-radius: 20px;
-  border: 1px solid var(--border); background: var(--surface-2); cursor: pointer; position: relative; white-space: nowrap;
+  flex-shrink: 0; font-size: 12.5px; padding: 7px 13px; border-radius: 99px;
+  border: 0; background: var(--surface-2); color: var(--text); cursor: pointer;
+  position: relative; white-space: nowrap;
 }
-.chat-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.chat-tab:hover { background: var(--surface-3); }
+.chat-tab.active { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
 .chat-dot {
-  position: absolute; top: -5px; right: -5px; background: var(--danger); color: #fff;
-  border-radius: 50%; min-width: 14px; height: 14px; font-size: 9px; display: flex; align-items: center; justify-content: center;
+  position: absolute; top: -4px; right: -4px; background: var(--danger); color: #2a1414;
+  border-radius: 50%; min-width: 16px; height: 16px; font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
 }
 
-.msg-list { display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto; padding: 4px 2px; }
-.msg { max-width: 80%; border-radius: 10px; padding: 6px 10px; font-size: 13px; white-space: pre-wrap; }
-.msg.mine { align-self: flex-end; background: var(--accent); color: #fff; }
+.msg-list { display: flex; flex-direction: column; gap: 9px; max-height: 340px; overflow-y: auto; padding: 4px 2px; }
+.msg { max-width: 82%; border-radius: 13px; padding: 9px 13px; font-size: 14px; white-space: pre-wrap; }
+.msg.mine { align-self: flex-end; background: #3d4650; color: var(--text); }
 .msg.theirs { align-self: flex-start; background: var(--surface-2); color: var(--text); }
-.msg.homework { background: var(--homework-bg); border: 1px solid var(--homework-border); color: var(--homework-text); }
-.msg-label { font-size: 10px; color: #a35b00; margin: 0 0 2px; }
+/* Здане ДЗ виділяється золотою смужкою, а не лише тлом: інакше воно зливається
+   зі звичайним повідомленням учениці. */
+.msg.homework { background: var(--homework-bg); color: var(--homework-text); box-shadow: inset 3px 0 0 var(--accent); }
+.msg-label { font-size: 11px; color: var(--accent); margin: 0 0 3px; }
 
-.attachment-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.homework-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.homework-actions .btn { flex: 1 1 auto; min-width: 140px; text-align: center; cursor: pointer; }
+
+.attachment-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 7px; }
 .attachment-actions a,
 .attachment-link {
   border: 0; padding: 0; background: none; color: inherit; cursor: pointer;
@@ -126,15 +170,16 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
 }
 .attachment-link:disabled { opacity: .55; cursor: wait; }
 .homework-description {
-  white-space: pre-wrap; background: var(--surface-2); border-radius: 8px;
-  padding: 10px; margin: 0 0 10px; font-size: 13px;
+  white-space: pre-wrap; background: var(--surface-2); border-radius: 10px;
+  padding: 13px; margin: 0 0 12px; font-size: 14px;
 }
+.homework-review { margin-top: 4px; }
 
-.chat-input-row { display: flex; gap: 6px; align-items: center; margin-top: 8px; }
+.chat-input-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
 .chat-input-row input[type="text"] { flex: 1; }
 
-.error-text { color: var(--danger); font-size: 12px; margin-top: 6px; }
-.success-text { color: #2E6B45; font-size: 12px; margin-top: 6px; }
+.error-text { color: var(--danger); font-size: 13px; margin-top: 7px; }
+.success-text { color: #7ad9a3; font-size: 13px; margin-top: 7px; }
 
 /* --------------------------------------------------------------------------
    Адмін-панель: окремий темний робочий простір
@@ -579,7 +624,6 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
 .admin-access-timing input { width: 106px; margin: 0; }
 .admin-file-name { margin: 8px 0 0; color: var(--admin-muted); font-size: 12.5px; overflow-wrap: anywhere; }
 .admin-file-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 6px; background: var(--admin-gold-soft); color: var(--admin-gold); }
-.lesson-circle.locked { opacity: .48; cursor: not-allowed; }
 
 .admin-course-settings { width: min(520px, calc(100vw - 28px)); border: 0; border-radius: 14px; background: #202428; color: var(--admin-text); padding: 20px; box-shadow: 0 30px 90px rgba(0,0,0,.55); }
 .admin-course-settings::backdrop { background: rgba(8,10,12,.74); backdrop-filter: blur(3px); }

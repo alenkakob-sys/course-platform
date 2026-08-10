@@ -4,29 +4,30 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Вхід на курс</title>
-<link rel="stylesheet" href="css/style.css?v=20260810-2" />
+<link rel="stylesheet" href="css/style.css?v=20260810-4" />
 </head>
 <body>
-<div class="page" style="margin-top:80px;">
+<div class="page" style="max-width:400px;margin-top:12vh;">
+  <p style="color:var(--accent);font-size:22px;font-weight:800;margin:0 0 28px;">BRWI.</p>
   <h1 class="h1">Вхід на курс</h1>
-  <p class="muted" style="margin-bottom:24px;">Увійдіть через Google, або отримайте посилання на email — пароль не потрібен.</p>
+  <p class="muted" style="margin:-8px 0 26px;">Пароль не потрібен.</p>
 
-  <button id="google-btn" class="btn" style="width:100%;margin-bottom:16px;">Увійти через Google</button>
-  <div class="muted" style="text-align:center;font-size:12px;margin-bottom:16px;">або</div>
+  <button id="google-btn" class="btn" style="width:100%;margin-bottom:14px;">Увійти через Google</button>
+  <div class="muted" style="text-align:center;font-size:13px;margin-bottom:14px;">або</div>
 
   <form id="email-form">
-    <input type="email" id="email-input" required placeholder="you@example.com" style="margin-bottom:12px;" />
-    <button type="submit" class="btn btn-primary" style="width:100%;">Отримати посилання для входу</button>
+    <input type="email" id="email-input" required placeholder="you@example.com" style="margin-bottom:10px;" />
+    <button type="submit" class="btn btn-primary" style="width:100%;">Отримати посилання</button>
   </form>
 
   <div id="sent-block" style="display:none;font-size:14px;">
     <p>Лист надіслано на <b id="sent-email"></b>. Перейдіть за посиланням у листі, щоб увійти.</p>
-    <p class="muted" style="font-size:12px;">Якщо не бачите лист протягом кількох хвилин — перевірте теку "Спам": лист приходить від нашого поштового сервісу, а не з особистої пошти.</p>
+    <p class="muted" style="font-size:13px;">Якщо листа немає кілька хвилин — перевірте теку «Спам»: він приходить від поштового сервісу, а не з особистої пошти.</p>
   </div>
 
   <p id="error-text" class="error-text" style="display:none;"></p>
 </div>
 
-<script type="module" src="js/pages/login.js?v=20260808-2"></script>
+<script type="module" src="js/pages/login.js?v=20260810-4"></script>
 </body>
 </html>

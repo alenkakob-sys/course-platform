@@ -1,7 +1,7 @@
 import { supabase } from '../supabaseClient.js';
 import { requireAuth } from '../auth.js';
 import { mountChatPanel } from '../components/chat-panel.js';
-import { mountHomeworkField } from '../components/homework-field.js?v=20260808-7';
+import { mountHomeworkField } from '../components/homework-field.js?v=20260810-4';
 import { STUDENT_LESSON_SELECT, normalizeLesson } from '../models/lesson.js';
 import { getCourseAssetUrl, openCourseAsset } from '../course-assets.js';
 
@@ -39,8 +39,7 @@ if (isAdminView && studentProfile) {
 }
 
 if (coursePresentation?.embed_url || coursePresentation?.file_key) {
-  const presentationBlock = document.getElementById('presentation-block');
-  presentationBlock.style.display = 'block';
+  document.getElementById('presentation-block').hidden = false;
   wirePresentationLinks({
     link: document.getElementById('presentation-link'),
     downloadButton: document.getElementById('presentation-download'),
@@ -68,8 +67,10 @@ function renderStrip() {
   for (const lesson of lessonList) {
     const lessonButton = document.createElement('button');
     const unlocked = isLessonUnlocked(lesson.id);
-    lessonButton.className = `lesson-circle${lesson.id === selectedLessonId ? ' active' : ''}${unlocked ? '' : ' locked'}`;
-    lessonButton.textContent = unlocked ? (lesson.short_label || lesson.title.slice(0, 3)) : '🔒';
+    // Назва словами, а не номер у кружечку: мітка, якщо вона є, інакше назва уроку.
+    const label = lesson.short_label || lesson.title || 'Урок';
+    lessonButton.className = `lesson-pill${lesson.id === selectedLessonId ? ' active' : ''}${unlocked ? '' : ' locked'}`;
+    lessonButton.textContent = unlocked ? label : `🔒 ${label}`;
     lessonButton.disabled = !unlocked;
     lessonButton.title = unlocked ? lesson.title : accessHint(lesson.id);
     lessonButton.addEventListener('click', () => { selectedLessonId = lesson.id; renderStrip(); renderLesson(); });
@@ -169,10 +170,19 @@ async function renderLesson() {
     selector.appendChild(button);
   });
 
-  document.getElementById('lesson-description').textContent = lesson?.description || 'Опис ще не додано.';
+  // Опис і ДЗ показуємо лише тоді, коли вони справді є: порожній розділ нічого
+  // не пояснює, а місце на екрані займає.
+  const descriptionBlock = document.getElementById('description-block');
+  const descriptionText = (lesson?.description || '').trim();
+  descriptionBlock.hidden = !descriptionText;
+  document.getElementById('lesson-description').textContent = descriptionText;
+
+  const homeworkBlock = document.getElementById('homework-block');
+  homeworkBlock.hidden = !lesson?.homework_enabled;
+
   const lessonPresentationBlock = document.getElementById('lesson-presentation-block');
   const hasLessonPresentation = Boolean(lesson?.presentation_url || lesson?.presentation_file_key);
-  lessonPresentationBlock.style.display = hasLessonPresentation ? 'block' : 'none';
+  lessonPresentationBlock.hidden = !hasLessonPresentation;
   if (hasLessonPresentation) {
     wirePresentationLinks({
       link: document.getElementById('lesson-presentation-link'),
@@ -183,7 +193,9 @@ async function renderLesson() {
     });
   }
 
-  mountHomeworkField(document.getElementById('homework-container'), { lesson, studentId, courseId, readOnly: isAdminView, onSubmitted: reloadProgress });
+  if (lesson?.homework_enabled) {
+    mountHomeworkField(document.getElementById('homework-container'), { lesson, studentId, courseId, readOnly: isAdminView, onSubmitted: reloadProgress });
+  }
 }
 
 function wirePresentationLinks({ link, downloadButton, url, fileKey, fileName }) {
@@ -191,17 +203,17 @@ function wirePresentationLinks({ link, downloadButton, url, fileKey, fileName })
   downloadButton.onclick = null;
   if (url) {
     link.href = url;
-    link.textContent = 'Презентація →';
-    downloadButton.style.display = 'none';
+    link.textContent = 'Презентація';
+    downloadButton.hidden = true;
     return;
   }
   link.href = '#';
-  link.textContent = fileName ? `Презентація: ${fileName} →` : 'Презентація →';
+  link.textContent = fileName || 'Презентація';
   link.onclick = async (event) => {
     event.preventDefault();
     try { await openCourseAsset({ courseId, objectKey: fileKey, fileName }); } catch (error) { alert(error.message); }
   };
-  downloadButton.style.display = 'inline-flex';
+  downloadButton.hidden = false;
   downloadButton.onclick = async () => {
     try { await openCourseAsset({ courseId, objectKey: fileKey, fileName, download: true }); } catch (error) { alert(error.message); }
   };

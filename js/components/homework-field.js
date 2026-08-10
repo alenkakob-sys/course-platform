@@ -26,12 +26,12 @@ export function mountHomeworkField(container, { lesson, studentId, courseId, rea
     ${requiredFormats.length ? `<p class="muted">Обов’язково: ${requiredFormats.map(({ validationLabel }) => validationLabel).join(', ')}</p>` : ''}
     <textarea id="hw-text" rows="3" placeholder="Ваша відповідь (необов'язково, якщо додаєте лише файли)"></textarea>
     <div id="hw-files" style="margin:8px 0;"></div>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <label class="btn" style="cursor:pointer;">
-        + Фото/відео
+    <div class="homework-actions">
+      <label class="btn">
+        ＋ Фото або відео
         <input type="file" id="hw-file-input" accept="image/*,video/*" multiple style="display:none;" />
       </label>
-      <button id="hw-submit" class="btn btn-primary">Надіслати домашнє завдання</button>
+      <button id="hw-submit" class="btn btn-primary">Надіслати</button>
     </div>
     <p id="hw-status" style="display:none;"></p>
   `;
