@@ -217,7 +217,7 @@ function renderComparison() {
           <label>Назва<input type="text" data-table-field="title" value="${escapeAttribute(lesson.title)}" /></label>
         </div>
         <label>Структура<select data-table-field="parent_lesson_id"></select></label>
-        <label>Опис<textarea data-table-field="description" rows="2">${escapeHtml(lesson.description || '')}</textarea></label>
+        <label>Опис<textarea data-table-field="description" rows="5">${escapeHtml(lesson.description || '')}</textarea></label>
       </div>
       <div class="admin-comparison-section">
         <div class="admin-table-videos"></div>
@@ -226,11 +226,14 @@ function renderComparison() {
       </div>
       <div class="admin-comparison-section">
         <div class="admin-table-subsection">
-          <label class="admin-table-check"><input data-table-homework-enabled type="checkbox" ${lesson.homework_enabled ? 'checked' : ''} /> Є ДЗ</label>
-          <div class="admin-table-requirements">
-            ${HOMEWORK_REQUIREMENTS.map(({ field, label }) => `<label><input data-require="${field}" type="checkbox" ${lesson[field] ? 'checked' : ''} ${lesson.homework_enabled ? '' : 'disabled'} /> ${label}</label>`).join('')}
+          <div class="admin-table-homework-row">
+            <label class="admin-switch"><input data-table-homework-enabled type="checkbox" ${lesson.homework_enabled ? 'checked' : ''} /><span></span></label>
+            <strong class="admin-table-homework-label">Є ДЗ</strong>
+            <div class="admin-table-requirements">
+              ${HOMEWORK_REQUIREMENTS.map(({ field, label }) => `<label><input data-require="${field}" type="checkbox" ${lesson[field] ? 'checked' : ''} ${lesson.homework_enabled ? '' : 'disabled'} /> ${label}</label>`).join('')}
+            </div>
           </div>
-          <textarea data-table-field="homework_description" rows="2" placeholder="Текст завдання" ${lesson.homework_enabled ? '' : 'disabled'}>${escapeHtml(lesson.homework_description || '')}</textarea>
+          <textarea data-table-field="homework_description" rows="5" placeholder="Текст завдання" ${lesson.homework_enabled ? '' : 'disabled'}>${escapeHtml(lesson.homework_description || '')}</textarea>
         </div>
         <div class="admin-table-subsection admin-table-access">
           <label>Доступ<select data-table-field="next_lesson_access_rule">${NEXT_LESSON_ACCESS_RULES.map(({ value, label }) => `<option value="${value}" ${lesson.next_lesson_access_rule === value ? 'selected' : ''}>${label}</option>`).join('')}</select></label>

@@ -47,10 +47,12 @@ function renderPendingCourseOptions() {
     pendingCourseOptionsEl.textContent = 'Спочатку створіть курс.';
     return;
   }
+  // Жодного курсу не позначено наперед: доступ відкривається лише свідомим
+  // натисканням, щоб забута галочка не роздала всі курси одразу.
   for (const course of courses) {
     const label = document.createElement('label');
     label.className = 'admin-course-check';
-    label.innerHTML = `<input type="checkbox" value="${course.id}" checked /> <span>${escapeHtml(course.title)}</span>`;
+    label.innerHTML = `<input type="checkbox" value="${course.id}" /> <span>${escapeHtml(course.title)}</span>`;
     pendingCourseOptionsEl.appendChild(label);
   }
 }

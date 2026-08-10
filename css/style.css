@@ -190,15 +190,18 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
   outline: none;
   transition: border-color .18s, box-shadow .18s, background .18s;
 }
+/* Наведення й фокус лишаються ТЕМНО-СІРИМИ — поле ніколи не стає прозорим.
+   Золотого тут навмисно немає: він позначає активний розділ і головну дію,
+   а не кожне поле, якого торкнулась мишка. */
 .admin-body input:hover,
 .admin-body textarea:hover,
-.admin-body select:hover { background: #1f2429; }
+.admin-body select:hover { background: #242a2f; }
 .admin-body input:focus,
 .admin-body textarea:focus,
 .admin-body select:focus {
-  border-color: var(--admin-gold);
-  box-shadow: 0 0 0 3px var(--admin-gold-soft);
-  background: #20252a;
+  border-color: rgba(255, 255, 255, .26);
+  box-shadow: none;
+  background: #262c32;
 }
 .admin-body input::placeholder,
 .admin-body textarea::placeholder { color: #747c84; }
@@ -263,6 +266,7 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
 }
 .admin-search span { color: var(--admin-muted); font-size: 20px; }
 .admin-search input { border: 0 !important; box-shadow: none !important; background: transparent !important; padding-left: 2px !important; }
+.admin-search:hover, .admin-search:focus-within { background: #242a2f; }
 .admin-search.compact { width: 100%; margin-bottom: 14px; }
 .admin-count { color: var(--admin-muted); font-size: 13.5px; }
 .admin-filter { color: var(--admin-muted); display: flex; gap: 8px; align-items: center; white-space: nowrap; cursor: pointer; }
@@ -310,7 +314,8 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
 .admin-course-check input { position: absolute; opacity: 0; pointer-events: none; }
 .admin-course-check span { display: inline-flex; align-items: center; min-height: 34px; border: 1px solid transparent; border-radius: 99px; padding: 0 13px; background: var(--admin-surface-2); color: var(--admin-muted); font-size: 13px; transition: .16s; }
 .admin-course-check input:checked + span { color: var(--admin-gold); border-color: var(--admin-gold); background: var(--admin-gold-soft); }
-.admin-course-check input:focus-visible + span { box-shadow: 0 0 0 3px var(--admin-gold-soft); }
+.admin-course-check:hover span { background: #333940; }
+.admin-course-check input:focus-visible + span { box-shadow: 0 0 0 2px rgba(255, 255, 255, .3); }
 
 .admin-unread-total { background: var(--admin-gold); color: #17191b; border-radius: 99px; padding: 8px 13px; font-weight: 800; font-size: 13px; }
 .admin-message-groups { display: grid; gap: 26px; }
@@ -340,15 +345,15 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
 .admin-editor-layout { display: grid; grid-template-columns: minmax(250px, 300px) minmax(0, 1fr); gap: 15px; align-items: start; }
 .admin-lessons-panel,
 .admin-lesson-editor { border: 0; border-radius: 12px; background: rgba(31,35,39,.82); }
-.admin-lessons-panel { position: sticky; top: 18px; padding: 15px; max-height: calc(100vh - 36px); overflow: auto; }
+.admin-lessons-panel { position: sticky; top: 18px; padding: 15px; max-height: calc(100vh - 36px); overflow: auto; background: rgba(24,27,30,.86); }
 .admin-section-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 13px; }
 .admin-section-title h2,
 .admin-section-title h3 { margin: 0; }
 .admin-section-title > span { color: var(--admin-muted); font-size: 12px; }
 .admin-lesson-list { display: grid; gap: 7px; margin-bottom: 12px; }
-.admin-lesson-card { position: relative; display: grid; grid-template-columns: 18px minmax(0,1fr); gap: 9px; align-items: center; border: 0; border-radius: 8px; background: var(--admin-surface-2); padding: 10px 11px; cursor: pointer; transition: background .16s; }
-.admin-lesson-card:hover { background: #333940; }
-.admin-lesson-card.active { box-shadow: inset 3px 0 0 var(--admin-gold); background: #2d3237; }
+.admin-lesson-card { position: relative; display: grid; grid-template-columns: 18px minmax(0,1fr); gap: 9px; align-items: center; border: 0; border-radius: 8px; background: #363d44; padding: 10px 11px; cursor: pointer; transition: background .16s; }
+.admin-lesson-card:hover { background: #414951; }
+.admin-lesson-card.active { box-shadow: inset 3px 0 0 var(--admin-gold); background: #4a535c; }
 .admin-lesson-card.child { margin-left: 16px; }
 .admin-drag { color: #7f878e; cursor: grab; letter-spacing: -2px; }
 .admin-lesson-card h3 { font-size: 14px; line-height: 1.3; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -485,13 +490,14 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
   width: min(420px, 45vw); min-width: 120px; border: 0; border-radius: 5px; padding: 7px 8px;
   background: transparent; color: var(--admin-text); font-size: 17px; font-weight: 700;
 }
-.admin-course-path #course-title:hover { background: rgba(255,255,255,.04); }
+.admin-course-path #course-title:hover,
+.admin-course-path #course-title:focus { background: #242a2f; }
 .admin-course-path #course-short-label {
   width: 72px; min-width: 54px; border: 0; border-radius: 5px; padding: 7px 6px;
   background: transparent; color: var(--admin-gold); font-weight: 700; text-align: center;
 }
 .admin-course-path #course-short-label:hover,
-.admin-course-path #course-short-label:focus { background: rgba(255,255,255,.06); }
+.admin-course-path #course-short-label:focus { background: #242a2f; }
 .admin-presentation-button {
   width: 38px; height: 38px; flex: 0 0 38px; border: 0; background: var(--admin-surface-2); border-radius: 8px;
   background: transparent; color: var(--admin-gold); font-size: 19px; cursor: pointer;
@@ -521,7 +527,9 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
 /* Табличний режим. Раніше тут було три рівні рамок одночасно — на картці, на
    кожній колонці й на кожному полі, — і око не мало за що зачепитись. Лишилась
    рівно одна лінія: між трьома колонками, бо вона єдина щось означає. */
-.admin-comparison-card { display: grid; grid-template-columns: minmax(0,1.05fr) minmax(0,.9fr) minmax(0,.95fr); border: 0; border-radius: 12px; background: rgba(31,35,39,.82); overflow: hidden; }
+/* Третій стовпчик ширший за середній: у ньому в один рядок мусять поміститись
+   перемикач ДЗ і три прапорці формату. Відео потребує найменше місця. */
+.admin-comparison-card { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,.7fr) minmax(0,1.15fr); border: 0; border-radius: 12px; background: rgba(31,35,39,.82); overflow: hidden; }
 .admin-comparison-section { min-width: 0; padding: 15px 16px; }
 .admin-comparison-section + .admin-comparison-section { border-left: 1px solid var(--admin-line); }
 .admin-comparison-card label { display: block; color: var(--admin-muted); font-size: 12px; }
@@ -541,6 +549,9 @@ button.btn-dashed { border-style: dashed; background: none; width: 100%; }
 .admin-table-subsection select { margin-top: 6px; }
 .admin-table-check { display: flex !important; align-items: center; gap: 6px; color: var(--admin-text) !important; }
 .admin-table-check input { width: auto; margin: 0; accent-color: var(--admin-gold); }
+.admin-table-homework-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; margin-bottom: 10px; }
+.admin-table-homework-label { font-size: 13px; font-weight: 600; }
+.admin-table-homework-row .admin-table-requirements { margin: 0; }
 .admin-table-requirements { display: flex; flex-wrap: wrap; gap: 7px 14px; margin-top: 9px; font-size: 13px; }
 .admin-table-requirements label { display: flex; align-items: center; gap: 4px; color: var(--admin-text); }
 .admin-table-requirements input { width: auto; margin: 0; accent-color: var(--admin-gold); }
