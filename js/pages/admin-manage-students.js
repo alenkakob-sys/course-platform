@@ -1,5 +1,6 @@
-import { supabase } from '../supabaseClient.js?v=20260827-2';
-import { requireAdmin, wireLogoutButton } from '../auth.js?v=20260827-2';
+import { supabase } from '../supabaseClient.js?v=20260827-3';
+import { requireAdmin, wireLogoutButton } from '../auth.js?v=20260827-3';
+import { FUNCTIONS_URL } from '../config.js?v=20260827-3';
 
 const auth = await requireAdmin();
 if (!auth) throw new Error('not admin');
@@ -107,6 +108,7 @@ function studentCard(student) {
     <div class="admin-student-main">
       <span class="admin-avatar">${escapeHtml(initials(displayName))}</span>
       <div><h2>${escapeHtml(displayName)}</h2>${student.full_name ? `<p>${escapeHtml(student.email)}</p>` : ''}</div>
+      <button type="button" class="admin-danger-link" data-delete>Видалити акаунт</button>
     </div>
     <div class="admin-access-list" aria-label="Доступ до курсів"></div>
   `;
@@ -114,6 +116,7 @@ function studentCard(student) {
     isChecked: (course) => access[student.id]?.has(course.id) || false,
     onToggle: (course, checkbox) => updateAccess(student.id, course.id, checkbox),
   });
+  card.querySelector('[data-delete]').addEventListener('click', () => deleteStudent(student, card));
   return card;
 }
 
@@ -160,6 +163,42 @@ function fillCourseChecks(container, { isChecked, onToggle }) {
     checkbox.addEventListener('change', () => onToggle(course, checkbox));
     label.append(checkbox, text);
     container.appendChild(label);
+  }
+}
+
+// Акаунт видаляє серверна функція: у браузері немає (і не може бути) ключа,
+// яким дозволено чіпати auth.users. Разом з акаунтом зникають доступи, прогрес
+// і листування — тому питаємо підтвердження з переліком того, що втратиться.
+async function deleteStudent(student, card) {
+  const label = student.full_name || student.email;
+  const confirmed = confirm(
+    `Видалити акаунт ${label}?\n\n`
+    + 'Зникнуть назавжди: доступи до курсів, прогрес уроків, здані домашні завдання та все листування в чаті.\n\n'
+    + 'Скасувати це буде неможливо.'
+  );
+  if (!confirmed) return;
+
+  const button = card.querySelector('[data-delete]');
+  button.disabled = true;
+  button.textContent = 'Видаляємо…';
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) throw new Error('Сесія завершилася. Увійдіть знову.');
+    const response = await fetch(`${FUNCTIONS_URL}/delete-student`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ studentId: student.id }),
+    });
+    if (response.status === 404) throw new Error('Функцію видалення ще не задеплоєно на Netlify.');
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || 'Не вдалося видалити акаунт.');
+    errorEl.hidden = true;
+    await load();
+  } catch (error) {
+    console.error('delete student failed', error);
+    showError(error.message);
+    button.disabled = false;
+    button.textContent = 'Видалити акаунт';
   }
 }
 

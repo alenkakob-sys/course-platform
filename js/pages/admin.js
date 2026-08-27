@@ -1,6 +1,6 @@
-import { supabase } from '../supabaseClient.js?v=20260827-2';
-import { requireAdmin, wireLogoutButton } from '../auth.js?v=20260827-2';
-import { fetchUnreadCounts } from '../chat.js?v=20260827-2';
+import { supabase } from '../supabaseClient.js?v=20260827-3';
+import { requireAdmin, wireLogoutButton } from '../auth.js?v=20260827-3';
+import { fetchUnreadCounts } from '../chat.js?v=20260827-3';
 
 const auth = await requireAdmin();
 if (!auth) throw new Error('not admin');
