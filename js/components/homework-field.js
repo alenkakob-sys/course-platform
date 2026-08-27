@@ -1,7 +1,7 @@
-import { getOrCreateThread, sendMessage } from '../chat.js?v=20260810-7';
-import { uploadPrivateFile, formatFileSize } from '../r2-files.js?v=20260810-7';
-import { getRequiredHomeworkFormats } from '../models/lesson.js?v=20260810-7';
-import { supabase } from '../supabaseClient.js?v=20260810-7';
+import { getOrCreateThread, sendMessage } from '../chat.js?v=20260827-2';
+import { uploadPrivateFile, formatFileSize } from '../r2-files.js?v=20260827-2';
+import { getRequiredHomeworkFormats } from '../models/lesson.js?v=20260827-2';
+import { supabase } from '../supabaseClient.js?v=20260827-2';
 
 export function mountHomeworkField(container, { lesson, studentId, courseId, readOnly = false, onSubmitted = null }) {
   if (!lesson.homework_enabled) {

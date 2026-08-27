@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient.js?v=20260810-7';
+import { supabase } from './supabaseClient.js?v=20260827-2';
 
 // Повертає { session, profile } або null, якщо не залогінені.
 export async function getSessionAndProfile() {

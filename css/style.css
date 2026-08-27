@@ -407,11 +407,15 @@ button.btn-dashed { border: 1px dashed var(--accent); color: var(--accent); back
 .admin-alert.success { color: #c8f7d9; border: 1px solid #397c55; background: rgba(57,124,85,.17); }
 
 .admin-invite-panel { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(420px, 1.4fr); gap: 24px; align-items: center; margin-bottom: 24px; }
-.admin-invite-panel form { display: flex; gap: 9px; }
+.admin-invite-panel #invite-form { display: flex; gap: 9px; }
 .admin-invite-panel #invite-status { grid-column: 2; margin: -13px 0 0; font-size: 13px; }
 .admin-students-list { display: grid; gap: 12px; }
 .admin-student-card { border: 0; border-radius: 12px; background: var(--admin-surface); padding: 16px 18px; }
 .admin-student-main { display: flex; gap: 13px; align-items: center; margin-bottom: 14px; }
+.admin-student-main > div { flex: 1; min-width: 0; }
+/* Ще не заходила: помітно, але без тривоги. */
+.admin-student-card.pending { box-shadow: inset 3px 0 0 var(--admin-gold); }
+.admin-student-card.pending .admin-avatar { background: var(--admin-gold-soft); }
 .admin-avatar { width: 40px; height: 40px; flex: 0 0 40px; border-radius: 50%; display: grid; place-items: center; background: #353b40; color: var(--admin-gold); font-weight: 700; }
 .admin-student-main h2 { margin: 0; font-size: 15px; }
 .admin-student-main p { margin: 3px 0 0; color: var(--admin-muted); font-size: 12px; }
@@ -553,7 +557,7 @@ button.btn-dashed { border: 1px dashed var(--accent); color: var(--accent); back
   .admin-toolbar { align-items: stretch; flex-direction: column; }
   .admin-filter { align-self: flex-start; }
   .admin-course-grid { grid-template-columns: 1fr; }
-  .admin-invite-panel form { flex-direction: column; }
+  .admin-invite-panel #invite-form { flex-direction: column; }
   .admin-room-card { grid-template-columns: auto minmax(0,1fr); }
   .admin-room-card > .badge { grid-column: 2; justify-self: start; }
   .admin-lesson-editor-title { align-items: flex-start; }

@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Учениці · Адмін-панель</title>
-<link rel="stylesheet" href="css/style.css?v=20260810-7" />
+<link rel="stylesheet" href="css/style.css?v=20260827-2" />
 </head>
 <body class="admin-body">
 <div class="admin-shell">
@@ -32,11 +32,16 @@
         <h2>Додати ученицю</h2>
         <p>Лист не надсилається. Доступ з’явиться після її першого входу через Google.</p>
       </div>
-      <form id="invite-form">
-        <input type="email" id="invite-email" required placeholder="email@example.com" autocomplete="email" />
+      <!-- Свідомо НЕ <form> і НЕ type="email": інакше браузер вважає це полем
+           «твоя пошта» й підставляє пошту власниці акаунта. Сюди вводять чужі
+           адреси, тож будь-яке автозаповнення тут лише заважає. -->
+      <div id="invite-form">
+        <input id="invite-email" type="text" inputmode="email" placeholder="email@example.com"
+               name="student-access-email" autocomplete="off" autocapitalize="off" spellcheck="false"
+               data-lpignore="true" data-1p-ignore data-form-type="other" aria-label="Пошта учениці" />
         <div id="pending-course-options" class="admin-access-list"></div>
-        <button type="submit" class="admin-primary">Зберегти доступ</button>
-      </form>
+        <button id="invite-submit" type="button" class="admin-primary">Зберегти доступ</button>
+      </div>
       <p id="invite-status" hidden></p>
     </section>
 
@@ -48,6 +53,6 @@
     <section id="students-list" class="admin-students-list" aria-live="polite"></section>
   </main>
 </div>
-<script type="module" src="js/pages/admin-manage-students.js?v=20260810-7"></script>
+<script type="module" src="js/pages/admin-manage-students.js?v=20260827-2"></script>
 </body>
 </html>
