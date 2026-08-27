@@ -1,6 +1,6 @@
-import { supabase } from '../supabaseClient.js?v=20260827-3';
-import { requireAdmin, wireLogoutButton } from '../auth.js?v=20260827-3';
-import { FUNCTIONS_URL } from '../config.js?v=20260827-3';
+import { supabase } from '../supabaseClient.js?v=20260827-4';
+import { requireAdmin, wireLogoutButton } from '../auth.js?v=20260827-4';
+import { FUNCTIONS_URL } from '../config.js?v=20260827-4';
 
 const auth = await requireAdmin();
 if (!auth) throw new Error('not admin');
@@ -196,7 +196,12 @@ async function deleteStudent(student, card) {
     await load();
   } catch (error) {
     console.error('delete student failed', error);
-    showError(error.message);
+    // TypeError від fetch = запит навіть не дійшов: найчастіше тому, що функції
+    // з такою назвою на Netlify ще немає, і її 404 приходить без CORS-заголовків.
+    const message = error instanceof TypeError
+      ? 'Сервер видалення не відповідає. Найімовірніше, репозиторій course-platform-functions ще не задеплоєний.'
+      : error.message;
+    showError(message);
     button.disabled = false;
     button.textContent = 'Видалити акаунт';
   }

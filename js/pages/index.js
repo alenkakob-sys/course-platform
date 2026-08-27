@@ -1,4 +1,4 @@
-import { getSessionAndProfile } from '../auth.js?v=20260827-3';
+import { getSessionAndProfile } from '../auth.js?v=20260827-4';
 
 const result = await getSessionAndProfile();
 if (!result) {

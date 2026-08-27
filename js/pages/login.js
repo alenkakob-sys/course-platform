@@ -1,5 +1,5 @@
-import { supabase } from '../supabaseClient.js?v=20260827-3';
-import { SITE_URL } from '../config.js?v=20260827-3';
+import { supabase } from '../supabaseClient.js?v=20260827-4';
+import { SITE_URL } from '../config.js?v=20260827-4';
 
 document.getElementById('google-btn').addEventListener('click', async () => {
   await supabase.auth.signInWithOAuth({
