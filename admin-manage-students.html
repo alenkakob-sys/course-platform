@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Учениці · Адмін-панель</title>
-<link rel="stylesheet" href="css/style.css?v=20260827-4" />
+<link rel="stylesheet" href="css/style.css?v=20260827-7" />
 </head>
 <body class="admin-body">
 <div class="admin-shell">
@@ -47,12 +47,27 @@
 
     <section class="admin-toolbar">
       <label class="admin-search"><span>⌕</span><input id="student-search" type="search" placeholder="Пошук за ім’ям або поштою" /></label>
-      <span id="student-count" class="admin-count"></span>
+      <div class="admin-list-controls">
+        <span id="student-count" class="admin-count"></span>
+        <select id="student-filter" aria-label="Показувати">
+          <option value="all">Усі</option>
+          <option value="pending">Ще не заходили</option>
+          <option value="registered">Уже заходили</option>
+        </select>
+        <select id="student-course" aria-label="Курс">
+          <option value="all">Будь-який курс</option>
+        </select>
+        <select id="student-sort" aria-label="Порядок">
+          <option value="new">Спершу нові</option>
+          <option value="old">Спершу давні</option>
+          <option value="email">За абеткою</option>
+        </select>
+      </div>
     </section>
     <p id="students-error" class="admin-alert error" hidden></p>
     <section id="students-list" class="admin-students-list" aria-live="polite"></section>
   </main>
 </div>
-<script type="module" src="js/pages/admin-manage-students.js?v=20260827-4"></script>
+<script type="module" src="js/pages/admin-manage-students.js?v=20260827-7"></script>
 </body>
 </html>

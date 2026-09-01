@@ -1,9 +1,9 @@
-import { supabase } from '../supabaseClient.js?v=20260827-4';
-import { requireAuth } from '../auth.js?v=20260827-4';
-import { mountChatPanel } from '../components/chat-panel.js?v=20260827-4';
-import { mountHomeworkField } from '../components/homework-field.js?v=20260827-4';
-import { STUDENT_LESSON_SELECT, normalizeLesson } from '../models/lesson.js?v=20260827-4';
-import { getCourseAssetUrl, openCourseAsset } from '../course-assets.js?v=20260827-4';
+import { supabase } from '../supabaseClient.js?v=20260827-7';
+import { requireAuth } from '../auth.js?v=20260827-7';
+import { mountChatPanel } from '../components/chat-panel.js?v=20260827-7';
+import { mountHomeworkField } from '../components/homework-field.js?v=20260827-7';
+import { STUDENT_LESSON_SELECT, normalizeLesson } from '../models/lesson.js?v=20260827-7';
+import { getCourseAssetUrl, openCourseAsset } from '../course-assets.js?v=20260827-7';
 
 const urlParams = new URLSearchParams(window.location.search);
 const courseId = urlParams.get('course');

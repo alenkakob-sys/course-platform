@@ -1,6 +1,6 @@
-import { supabase } from '../supabaseClient.js?v=20260827-4';
-import { requireAdmin, wireLogoutButton } from '../auth.js?v=20260827-4';
-import { FUNCTIONS_URL } from '../config.js?v=20260827-4';
+import { supabase } from '../supabaseClient.js?v=20260827-7';
+import { requireAdmin, wireLogoutButton } from '../auth.js?v=20260827-7';
+import { FUNCTIONS_URL } from '../config.js?v=20260827-7';
 
 const auth = await requireAdmin();
 if (!auth) throw new Error('not admin');
@@ -13,11 +13,33 @@ const searchEl = document.getElementById('student-search');
 const errorEl = document.getElementById('students-error');
 const statusEl = document.getElementById('invite-status');
 const pendingCourseOptionsEl = document.getElementById('pending-course-options');
+const filterEl = document.getElementById('student-filter');
+const courseFilterEl = document.getElementById('student-course');
+const sortEl = document.getElementById('student-sort');
 
 let students = [];
 let pendingStudents = [];
 let courses = [];
 let access = {};
+
+// invited_at зʼявляється лише після міграції 20260827_invited_at.sql. Поки її
+// не виконано, запитуємо без цього стовпця — сторінка не мусить падати через
+// те, що база ще на крок позаду.
+let invitedAtAvailable = true;
+
+async function loadStudents() {
+  if (invitedAtAvailable) {
+    const withInvited = await supabase
+      .from('profiles').select('id, email, full_name, created_at, invited_at')
+      .eq('role', 'student').order('invited_at', { ascending: false });
+    if (!withInvited.error) return withInvited;
+    invitedAtAvailable = false;
+    console.warn('Стовпця invited_at ще немає — виконайте міграцію 20260827_invited_at.sql');
+  }
+  return supabase
+    .from('profiles').select('id, email, full_name, created_at')
+    .eq('role', 'student').order('created_at', { ascending: false });
+}
 
 async function load() {
   listEl.innerHTML = '<div class="admin-empty-card">Завантажуємо учениць…</div>';
@@ -28,10 +50,10 @@ async function load() {
     { data: pendingRows },
     { data: pendingAccessRows },
   ] = await Promise.all([
-    supabase.from('profiles').select('id, email, full_name').eq('role', 'student').order('email'),
+    loadStudents(),
     supabase.from('courses').select('id, title').order('order_index'),
     supabase.from('course_access').select('student_id, course_id'),
-    supabase.from('pending_students').select('email, created_at').order('created_at'),
+    supabase.from('pending_students').select('email, created_at').order('created_at', { ascending: false }),
     supabase.from('pending_course_access').select('email, course_id'),
   ]);
 
@@ -58,10 +80,24 @@ async function load() {
   });
   pendingStudents = (pendingRows || [])
     .filter((row) => !registeredEmails.has((row.email || '').toLowerCase()))
-    .map((row) => ({ email: row.email, courses: pendingAccess[row.email] || new Set() }));
+    .map((row) => ({ email: row.email, createdAt: row.created_at, courses: pendingAccess[row.email] || new Set() }));
 
   renderPendingCourseOptions();
+  renderCourseFilter();
   render();
+}
+
+function renderCourseFilter() {
+  const previous = courseFilterEl.value;
+  courseFilterEl.innerHTML = '<option value="all">Будь-який курс</option>';
+  for (const course of courses) {
+    const option = document.createElement('option');
+    option.value = course.id;
+    option.textContent = course.title;
+    courseFilterEl.appendChild(option);
+  }
+  // Якщо обраний курс нікуди не подівся — лишаємо вибір користувачки.
+  courseFilterEl.value = [...courseFilterEl.options].some((o) => o.value === previous) ? previous : 'all';
 }
 
 function renderPendingCourseOptions() {
@@ -83,8 +119,29 @@ function renderPendingCourseOptions() {
 function render() {
   const query = searchEl.value.trim().toLocaleLowerCase('uk');
   const matches = (value) => value.toLocaleLowerCase('uk').includes(query);
-  const filteredPending = pendingStudents.filter((item) => matches(item.email));
-  const filtered = students.filter((student) => matches(`${student.full_name || ''} ${student.email || ''}`));
+  const state = filterEl.value;
+  const courseId = courseFilterEl.value;
+  const order = sortEl.value;
+
+  let filteredPending = state === 'registered' ? [] : pendingStudents.filter((item) => matches(item.email));
+  let filtered = state === 'pending' ? [] : students.filter((student) => matches(`${student.full_name || ''} ${student.email || ''}`));
+
+  if (courseId !== 'all') {
+    filteredPending = filteredPending.filter((item) => item.courses.has(courseId));
+    filtered = filtered.filter((student) => access[student.id]?.has(courseId));
+  }
+
+  // Дата для сортування: у черзі — коли додана, у профілі — invited_at, а якщо
+  // міграцію ще не виконано, лишається дата першого входу.
+  const dateOf = (row) => new Date(row.createdAt || row.invited_at || row.created_at || 0).getTime();
+  // Сортуємо за тим, що написано в картці: у зареєстрованої це імʼя, якщо воно є.
+  const emailOf = (row) => (row.full_name || row.email || '').toLocaleLowerCase('uk');
+  const sorter = order === 'email'
+    ? (a, b) => emailOf(a).localeCompare(emailOf(b), 'uk')
+    : order === 'old' ? (a, b) => dateOf(a) - dateOf(b) : (a, b) => dateOf(b) - dateOf(a);
+  filteredPending.sort(sorter);
+  filtered.sort(sorter);
+
   const total = filteredPending.length + filtered.length;
 
   countEl.textContent = `${total} ${plural(total, 'учениця', 'учениці', 'учениць')}`;
@@ -107,7 +164,7 @@ function studentCard(student) {
   card.innerHTML = `
     <div class="admin-student-main">
       <span class="admin-avatar">${escapeHtml(initials(displayName))}</span>
-      <div><h2>${escapeHtml(displayName)}</h2>${student.full_name ? `<p>${escapeHtml(student.email)}</p>` : ''}</div>
+      <div><h2>${escapeHtml(displayName)}</h2><p>${student.full_name ? `${escapeHtml(student.email)} · ` : ''}${student.invited_at ? `додана ${formatDate(student.invited_at)}` : `перший вхід ${formatDate(student.created_at)}`}</p></div>
       <button type="button" class="admin-danger-link" data-delete>Видалити акаунт</button>
     </div>
     <div class="admin-access-list" aria-label="Доступ до курсів"></div>
@@ -126,7 +183,7 @@ function pendingCard(item) {
   card.innerHTML = `
     <div class="admin-student-main">
       <span class="admin-avatar">${escapeHtml(initials(item.email))}</span>
-      <div><h2>${escapeHtml(item.email)}</h2><p>Ще не заходила — доступ застосується при першому вході</p></div>
+      <div><h2>${escapeHtml(item.email)}</h2><p>Додана ${formatDate(item.createdAt)} · ще не заходила</p></div>
       <button type="button" class="admin-danger-link" data-remove>Прибрати</button>
     </div>
     <div class="admin-access-list" aria-label="Доступ до курсів"></div>
@@ -275,6 +332,8 @@ async function saveAccess() {
         .upsert(courseIds.map((course_id) => ({ student_id: existing.id, course_id })), { onConflict: 'student_id,course_id' });
       if (grantError) throw grantError;
       await supabase.from('pending_students').delete().eq('email', email);
+      await supabase.from('profiles').update({ invited_at: new Date().toISOString() })
+        .eq('id', existing.id).is('invited_at', null);
       statusEl.className = 'admin-alert success';
       statusEl.textContent = 'Ця учениця вже має акаунт — доступ відкрито одразу ✓';
     } else {
@@ -305,10 +364,20 @@ document.getElementById('invite-email').addEventListener('keydown', (event) => {
 });
 
 searchEl.addEventListener('input', render);
+for (const control of [filterEl, courseFilterEl, sortEl]) control.addEventListener('change', render);
 
 function showError(message) {
   errorEl.textContent = message;
   errorEl.hidden = false;
+}
+
+// Дата коротко: «27 серпня», а торішня — з роком.
+function formatDate(value) {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  const sameYear = date.getFullYear() === new Date().getFullYear();
+  return date.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', ...(sameYear ? {} : { year: 'numeric' }) });
 }
 
 function initials(value) {

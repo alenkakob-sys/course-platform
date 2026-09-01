@@ -1,7 +1,7 @@
-import { supabase } from '../supabaseClient.js?v=20260827-4';
-import { requireAdmin, wireLogoutButton } from '../auth.js?v=20260827-4';
-import { ADMIN_LESSON_SELECT, HOMEWORK_REQUIREMENTS, NEXT_LESSON_ACCESS_RULES, normalizeLesson } from '../models/lesson.js?v=20260827-4';
-import { uploadCourseAsset } from '../course-assets.js?v=20260827-4';
+import { supabase } from '../supabaseClient.js?v=20260827-7';
+import { requireAdmin, wireLogoutButton } from '../auth.js?v=20260827-7';
+import { ADMIN_LESSON_SELECT, HOMEWORK_REQUIREMENTS, NEXT_LESSON_ACCESS_RULES, normalizeLesson } from '../models/lesson.js?v=20260827-7';
+import { uploadCourseAsset } from '../course-assets.js?v=20260827-7';
 
 const urlParams = new URLSearchParams(window.location.search);
 const courseId = urlParams.get('course');
