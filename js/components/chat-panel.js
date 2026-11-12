@@ -1,5 +1,5 @@
-import { getOrCreateThread, fetchMessages, sendMessage, markThreadRead, subscribeToThreadMessages, fetchUnreadCounts } from '../chat.js?v=20260827-7';
-import { uploadPrivateFile, openPrivateFile, isPrivateFileRef, getPrivateFilePreviewUrl, attachmentKind } from '../r2-files.js?v=20260827-7';
+import { getOrCreateThread, fetchMessages, sendMessage, markThreadRead, subscribeToThreadMessages, fetchUnreadCounts } from '../chat.js?v=20261112-1';
+import { uploadPrivateFile, openPrivateFile, isPrivateFileRef, getPrivateFilePreviewUrl, attachmentKind } from '../r2-files.js?v=20261112-1';
 
 // Монтує незалежний модуль чату в container. lessons — масив уроків курсу.
 // Перемикач уроків тут СВІЙ, окремий від відео вище (п.10 ТЗ):

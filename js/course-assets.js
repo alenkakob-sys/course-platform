@@ -1,5 +1,5 @@
-import { supabase } from './supabaseClient.js?v=20260827-7';
-import { FUNCTIONS_URL } from './config.js?v=20260827-7';
+import { supabase } from './supabaseClient.js?v=20261112-1';
+import { FUNCTIONS_URL } from './config.js?v=20261112-1';
 
 const PART_SIZE = 64 * 1024 * 1024;
 

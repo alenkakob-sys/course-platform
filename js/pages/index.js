@@ -1,8 +1,8 @@
-import { getSessionAndProfile } from '../auth.js?v=20260827-7';
+import { getSessionAndProfile } from '../auth.js?v=20261112-1';
 
 const result = await getSessionAndProfile();
 if (!result) {
   window.location.href = 'login.html';
 } else {
-  window.location.href = result.profile?.role === 'admin' ? 'admin-manage.html' : 'courses.html';
+  window.location.href = result.profile?.role === 'admin' ? 'admin-manage-students.html' : 'courses.html';
 }

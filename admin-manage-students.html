@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Учениці · Адмін-панель</title>
-<link rel="stylesheet" href="css/style.css?v=20260827-7" />
+<link rel="stylesheet" href="css/style.css?v=20261112-1" />
 </head>
 <body class="admin-body">
 <div class="admin-shell">
@@ -32,13 +32,16 @@
         <h2>Додати ученицю</h2>
         <p>Лист не надсилається. Доступ з’явиться після її першого входу через Google.</p>
       </div>
-      <!-- Свідомо НЕ <form> і НЕ type="email": інакше браузер вважає це полем
-           «твоя пошта» й підставляє пошту власниці акаунта. Сюди вводять чужі
-           адреси, тож будь-яке автозаповнення тут лише заважає. -->
+      <!-- Браузер підставляє твою пошту не через <form>, а за НАЗВОЮ поля: він
+           бачить слово email в id/name і вирішує, що це «моя пошта». Тому поле
+           більше ніде не зветься email, значення autocomplete навмисно
+           невідоме браузеру, а до першого дотику поле readonly — у readonly
+           Chrome не підставляє нічого взагалі. -->
       <div id="invite-form">
-        <input id="invite-email" type="text" inputmode="email" placeholder="email@example.com"
-               name="student-access-email" autocomplete="off" autocapitalize="off" spellcheck="false"
-               data-lpignore="true" data-1p-ignore data-form-type="other" aria-label="Пошта учениці" />
+        <input id="invite-target" type="text" readonly placeholder="вписати пошту учениці"
+               name="brwi-access-row" autocomplete="brwi-no-autofill" autocapitalize="off"
+               spellcheck="false" data-lpignore="true" data-1p-ignore data-form-type="other"
+               aria-label="Пошта учениці" />
         <div id="pending-course-options" class="admin-access-list"></div>
         <button id="invite-submit" type="button" class="admin-primary">Зберегти доступ</button>
       </div>
@@ -68,6 +71,6 @@
     <section id="students-list" class="admin-students-list" aria-live="polite"></section>
   </main>
 </div>
-<script type="module" src="js/pages/admin-manage-students.js?v=20260827-7"></script>
+<script type="module" src="js/pages/admin-manage-students.js?v=20261112-1"></script>
 </body>
 </html>

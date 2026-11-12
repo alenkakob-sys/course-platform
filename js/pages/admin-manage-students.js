@@ -1,6 +1,6 @@
-import { supabase } from '../supabaseClient.js?v=20260827-7';
-import { requireAdmin, wireLogoutButton } from '../auth.js?v=20260827-7';
-import { FUNCTIONS_URL } from '../config.js?v=20260827-7';
+import { supabase } from '../supabaseClient.js?v=20261112-1';
+import { requireAdmin, wireLogoutButton } from '../auth.js?v=20261112-1';
+import { FUNCTIONS_URL } from '../config.js?v=20261112-1';
 
 const auth = await requireAdmin();
 if (!auth) throw new Error('not admin');
@@ -306,7 +306,7 @@ async function updateAccess(studentId, courseId, checkbox) {
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 async function saveAccess() {
-  const emailInput = document.getElementById('invite-email');
+  const emailInput = document.getElementById('invite-target');
   const submitButton = document.getElementById('invite-submit');
   statusEl.hidden = false;
   statusEl.className = '';
@@ -358,8 +358,15 @@ async function saveAccess() {
   }
 }
 
+// Знімаємо readonly аж коли в поле справді клацнули: до того браузеру нічого
+// підставляти, бо readonly-поля він не чіпає.
+const inviteInput = document.getElementById('invite-target');
+for (const eventName of ['focus', 'pointerdown']) {
+  inviteInput.addEventListener(eventName, () => inviteInput.removeAttribute('readonly'));
+}
+
 document.getElementById('invite-submit').addEventListener('click', saveAccess);
-document.getElementById('invite-email').addEventListener('keydown', (event) => {
+document.getElementById('invite-target').addEventListener('keydown', (event) => {
   if (event.key === 'Enter') { event.preventDefault(); saveAccess(); }
 });
 
