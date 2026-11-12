@@ -1,9 +1,10 @@
-import { supabase } from '../supabaseClient.js?v=20261112-1';
-import { requireAuth } from '../auth.js?v=20261112-1';
-import { mountChatPanel } from '../components/chat-panel.js?v=20261112-1';
-import { mountHomeworkField } from '../components/homework-field.js?v=20261112-1';
-import { STUDENT_LESSON_SELECT, normalizeLesson } from '../models/lesson.js?v=20261112-1';
-import { getCourseAssetUrl, openCourseAsset } from '../course-assets.js?v=20261112-1';
+import { supabase } from '../supabaseClient.js?v=20261112-2';
+import { requireAuth } from '../auth.js?v=20261112-2';
+import { mountChatPanel } from '../components/chat-panel.js?v=20261112-2';
+import { mountHomeworkField } from '../components/homework-field.js?v=20261112-2';
+import { STUDENT_LESSON_SELECT, normalizeLesson } from '../models/lesson.js?v=20261112-2';
+import { getCourseAssetUrl, openCourseAsset } from '../course-assets.js?v=20261112-2';
+import { mountAccessNotice } from '../access-notice.js?v=20261112-2';
 
 const urlParams = new URLSearchParams(window.location.search);
 const courseId = urlParams.get('course');
@@ -48,6 +49,8 @@ if (coursePresentation?.embed_url || coursePresentation?.file_key) {
     fileName: coursePresentation.file_name,
   });
 }
+
+if (!isAdminView) mountAccessNotice(document.querySelector('.page'), studentId, [courseId]);
 
 const lessonList = (lessonRows || []).map(normalizeLesson);
 let lessonProgress = new Map();

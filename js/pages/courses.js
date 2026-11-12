@@ -1,6 +1,7 @@
-import { supabase } from '../supabaseClient.js?v=20261112-1';
-import { requireAuth, wireLogoutButton } from '../auth.js?v=20261112-1';
-import { fetchUnreadCounts } from '../chat.js?v=20261112-1';
+import { supabase } from '../supabaseClient.js?v=20261112-2';
+import { requireAuth, wireLogoutButton } from '../auth.js?v=20261112-2';
+import { fetchUnreadCounts } from '../chat.js?v=20261112-2';
+import { mountAccessNotice } from '../access-notice.js?v=20261112-2';
 
 const result = await requireAuth();
 if (result) {
@@ -8,6 +9,7 @@ if (result) {
 
   const { data: courses } = await supabase.from('courses').select('id, title').order('order_index');
   const listEl = document.getElementById('course-list');
+  mountAccessNotice(listEl.parentElement, result.profile.id);
 
   if (!courses || courses.length === 0) {
     listEl.innerHTML = '<p class="muted">Поки що немає доступних курсів.</p>';

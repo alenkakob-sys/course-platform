@@ -239,6 +239,16 @@ button.btn-dashed { border: 1px dashed var(--accent); color: var(--accent); back
 .chat-input-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
 .chat-input-row input[type="text"] { flex: 1; }
 
+/* Попередження про закінчення доступу. Золоте, не червоне: це нагадування,
+   а не помилка. */
+.access-notice {
+  border-radius: 12px; background: var(--accent-soft); color: #f4e3bd;
+  padding: 15px 17px; margin-bottom: 14px; font-size: 14px;
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.access-notice p { margin: 0 0 8px; }
+.access-notice-link { display: inline-block; font-weight: 700; color: var(--accent); }
+
 .error-text { color: var(--danger); font-size: 13px; margin-top: 7px; }
 .success-text { color: #7ad9a3; font-size: 13px; margin-top: 7px; }
 
@@ -416,9 +426,18 @@ button.btn-dashed { border: 1px dashed var(--accent); color: var(--accent); back
 .admin-alert.error { color: #ffd6d6; border: 1px solid #824b4b; background: rgba(130,75,75,.18); }
 .admin-alert.success { color: #c8f7d9; border: 1px solid #397c55; background: rgba(57,124,85,.17); }
 
-.admin-invite-panel { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(420px, 1.4fr); gap: 24px; align-items: center; margin-bottom: 24px; }
-.admin-invite-panel #invite-form { display: flex; gap: 9px; }
-.admin-invite-panel #invite-status { grid-column: 2; margin: -13px 0 0; font-size: 13px; }
+/* Панель доступу: поле пошти ліворуч, курси стовпчиком, галочка строку —
+   праворуч від них і РІВНО ПОСЕРЕДИНІ по вертикалі (align-items:center), далі
+   кнопка. Пояснювальних підписів тут немає: поле саме каже, що в нього вписати. */
+.admin-invite-panel { margin-bottom: 24px; }
+.admin-invite-panel #invite-form { display: flex; align-items: center; gap: 14px; }
+.admin-invite-panel #invite-target { flex: 1 1 260px; min-width: 0; }
+.invite-courses { display: flex; align-items: center; gap: 12px; flex: 0 1 auto; min-width: 0; }
+/* У формі курси йдуть стовпчиком, і волоска над ними бути не повинно. */
+.admin-invite-panel #pending-course-options { flex-direction: column; align-items: flex-start; gap: 8px; padding-top: 0; border-top: 0; flex-wrap: nowrap; }
+.invite-term { flex: 0 0 auto; }
+.admin-invite-panel #invite-submit { flex: 0 0 auto; }
+.admin-invite-panel #invite-status { margin: 12px 0 0; font-size: 13px; }
 .admin-students-list { display: grid; gap: 12px; }
 .admin-student-card { border: 0; border-radius: 12px; background: var(--admin-surface); padding: 16px 18px; }
 .admin-student-main { display: flex; gap: 13px; align-items: center; margin-bottom: 14px; }
@@ -530,8 +549,6 @@ button.btn-dashed { border: 1px dashed var(--accent); color: var(--accent); back
 
 @media (max-width: 980px) {
   .admin-form-grid.two { grid-template-columns: 1fr; }
-  .admin-invite-panel { grid-template-columns: 1fr; }
-  .admin-invite-panel #invite-status { grid-column: 1; }
 }
 
 @media (max-width: 800px) {
@@ -567,7 +584,12 @@ button.btn-dashed { border: 1px dashed var(--accent); color: var(--accent); back
   .admin-toolbar { align-items: stretch; flex-direction: column; }
   .admin-filter { align-self: flex-start; }
   .admin-course-grid { grid-template-columns: 1fr; }
-  .admin-invite-panel #invite-form { flex-direction: column; }
+  /* На телефоні поле пошти і кнопка на всю ширину, а курси з галочкою
+     лишаються одним рядком: галочка праворуч, посередині між двома курсами. */
+  .admin-invite-panel #invite-form { flex-wrap: wrap; }
+  .admin-invite-panel #invite-target { flex: 1 1 100%; }
+  .invite-courses { flex: 1 1 100%; justify-content: space-between; }
+  .admin-invite-panel #invite-submit { flex: 1 1 100%; }
   .admin-room-card { grid-template-columns: auto minmax(0,1fr); }
   .admin-room-card > .badge { grid-column: 2; justify-self: start; }
   .admin-lesson-editor-title { align-items: flex-start; }

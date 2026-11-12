@@ -1,5 +1,5 @@
-import { supabase } from './supabaseClient.js?v=20261112-1';
-import { FUNCTIONS_URL } from './config.js?v=20261112-1';
+import { supabase } from './supabaseClient.js?v=20261112-2';
+import { FUNCTIONS_URL } from './config.js?v=20261112-2';
 
 async function authenticatedRequest(path, body) {
   const { data: { session } } = await supabase.auth.getSession();

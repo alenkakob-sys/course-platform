@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Учениці · Адмін-панель</title>
-<link rel="stylesheet" href="css/style.css?v=20261112-1" />
+<link rel="stylesheet" href="css/style.css?v=20261112-2" />
 </head>
 <body class="admin-body">
 <div class="admin-shell">
@@ -23,15 +23,10 @@
       <div>
         <p class="admin-eyebrow">Керування доступом</p>
         <h1>Учениці</h1>
-        <p>Надавайте доступ до окремих курсів.</p>
       </div>
     </header>
 
     <section class="admin-panel admin-invite-panel">
-      <div>
-        <h2>Додати ученицю</h2>
-        <p>Лист не надсилається. Доступ з’явиться після її першого входу через Google.</p>
-      </div>
       <!-- Браузер підставляє твою пошту не через <form>, а за НАЗВОЮ поля: він
            бачить слово email в id/name і вирішує, що це «моя пошта». Тому поле
            більше ніде не зветься email, значення autocomplete навмисно
@@ -42,7 +37,13 @@
                name="brwi-access-row" autocomplete="brwi-no-autofill" autocapitalize="off"
                spellcheck="false" data-lpignore="true" data-1p-ignore data-form-type="other"
                aria-label="Пошта учениці" />
-        <div id="pending-course-options" class="admin-access-list"></div>
+        <div class="invite-courses">
+          <div id="pending-course-options" class="admin-access-list"></div>
+          <label class="admin-course-check invite-term">
+            <input id="invite-one-month" type="checkbox" />
+            <span>Доступ тільки на 1 місяць</span>
+          </label>
+        </div>
         <button id="invite-submit" type="button" class="admin-primary">Зберегти доступ</button>
       </div>
       <p id="invite-status" hidden></p>
@@ -71,6 +72,6 @@
     <section id="students-list" class="admin-students-list" aria-live="polite"></section>
   </main>
 </div>
-<script type="module" src="js/pages/admin-manage-students.js?v=20261112-1"></script>
+<script type="module" src="js/pages/admin-manage-students.js?v=20261112-2"></script>
 </body>
 </html>

@@ -11,3 +11,8 @@ export const SITE_URL = 'https://alenkakob-sys.github.io/course-platform';
 
 // Адреса окремого міні-проєкту на Netlify, який обробляє Telegram
 export const FUNCTIONS_URL = 'https://course-platform-functions.netlify.app/.netlify/functions';
+
+// ⚠️ ВПИСАТИ НІК: сюди учениця пише, щоб подовжити доступ.
+// Порожнє значення — у попередженні буде просто «напишіть в Instagram»,
+// без посилання. Формат: 'alenka.brwi' (без @ і без адреси).
+export const INSTAGRAM_HANDLE = '';
