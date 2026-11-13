@@ -54,6 +54,12 @@ if (!isAdminView) mountAccessNotice(document.querySelector('.page'), studentId, 
 
 const lessonList = (lessonRows || []).map(normalizeLesson);
 let lessonProgress = new Map();
+// Уроки, відкриті вручну: ДЗ могло прийти в Інстаграм, і тоді правило курсу
+// ніколи не спрацює саме. Ручне відкриття сильніше за будь-яке правило.
+const { data: unlockRows } = lessonList.length
+  ? await supabase.from('lesson_unlocks').select('lesson_id').eq('student_id', studentId).in('lesson_id', lessonList.map((lesson) => lesson.id))
+  : { data: [] };
+let manualUnlocks = new Set((unlockRows || []).map((row) => row.lesson_id));
 const { data: progressRows } = lessonList.length
   ? await supabase.from('lesson_progress').select('lesson_id, first_opened_at, homework_submitted_at, homework_review_status').eq('student_id', studentId).in('lesson_id', lessonList.map((lesson) => lesson.id))
   : { data: [] };
@@ -82,6 +88,7 @@ function renderStrip() {
 }
 
 function isLessonUnlocked(lessonId) {
+  if (manualUnlocks.has(lessonId)) return true;
   const index = lessonList.findIndex((lesson) => lesson.id === lessonId);
   if (index <= 0) return true;
   const previousLesson = lessonList[index - 1];
