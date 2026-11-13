@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Редагування курсу · Адмін-панель</title>
-<link rel="stylesheet" href="css/style.css?v=20261113-2" />
+<link rel="stylesheet" href="css/style.css?v=20261113-3" />
 </head>
 <body class="admin-body admin-editor-body">
 <div class="admin-shell" id="admin-shell">
@@ -28,7 +28,9 @@
         <a href="admin-manage.html">Курси</a><span>/</span>
         <input id="course-short-label" type="text" maxlength="32" placeholder="Мітка" aria-label="Мітка курсу" title="Мітка курсу" />
         <input id="course-title" type="text" aria-label="Назва курсу" />
-        <button id="course-settings-toggle" class="admin-presentation-button" type="button" aria-label="Загальна презентація" title="Загальна презентація">▧</button>
+        <button id="choose-course-presentation" class="admin-presentation-button" type="button" aria-label="Загальна презентація курсу" title="Загальна презентація курсу">📁</button>
+        <button id="delete-course" class="admin-presentation-button danger" type="button" aria-label="Видалити курс" title="Видалити курс">🗑</button>
+        <span id="course-presentation-file-name" class="admin-file-name" hidden></span>
       </div>
       <div class="admin-view-switch" aria-label="Режим редактора">
         <button id="single-mode" class="active" type="button">Один урок</button>
@@ -53,17 +55,12 @@
         </div>
         <div id="editor-content" hidden>
           <div class="admin-lesson-editor-title">
-            <div><span id="editor-short-label"></span><h2 id="editor-title"></h2></div>
-            <button id="delete-lesson" class="admin-danger-link" type="button">Видалити урок</button>
+            <input id="lesson-short-label" type="text" class="lesson-inline-label" placeholder="Мітка" aria-label="Мітка" />
+            <input id="lesson-title" type="text" class="lesson-inline-title" placeholder="Назва уроку" aria-label="Назва уроку" />
           </div>
 
           <section class="admin-panel admin-primary-fields">
-            <div class="admin-form-grid lesson-identity-grid">
-              <input id="lesson-short-label" type="text" placeholder="Мітка" aria-label="Мітка" title="Мітка" />
-              <input id="lesson-title" type="text" placeholder="Назва уроку" aria-label="Назва уроку" title="Назва уроку" />
-              <select id="lesson-parent" aria-label="Структура" title="Структура"><option value="">Головний рівень</option></select>
-            </div>
-            <textarea id="lesson-description" class="admin-field" rows="6" placeholder="Опис уроку" aria-label="Опис уроку"></textarea>
+            <textarea id="lesson-description" rows="6" placeholder="Опис уроку" aria-label="Опис уроку"></textarea>
           </section>
 
           <div class="admin-lesson-data-grid admin-single-sections">
@@ -84,16 +81,14 @@
               </div>
               <div id="homework-settings">
                   <fieldset class="admin-homework-formats">
-                    <legend>Обов’язково</legend>
                     <label><input id="homework-require-text" type="checkbox" /> Текст</label>
                     <label><input id="homework-require-photo" type="checkbox" /> Фото</label>
                     <label><input id="homework-require-video" type="checkbox" /> Відео</label>
                   </fieldset>
-                <label class="admin-field">Завдання<textarea id="homework-description" rows="6" placeholder="Опишіть, що потрібно виконати"></textarea></label>
+                <textarea id="homework-description" class="admin-field" rows="6" placeholder="Завдання: опишіть, що потрібно виконати" aria-label="Завдання"></textarea>
               </div>
             </div>
             <div class="admin-access-column">
-              <div class="admin-section-title"><div><h3>Доступ до наступного уроку</h3></div></div>
               <select id="access-rule" aria-label="Умова доступу до наступного уроку">
                 <option value="free">Вільний доступ</option>
                 <option value="after_submission">Після здачі ДЗ</option>
@@ -111,6 +106,11 @@
             </div>
             </section>
           </div>
+
+          <section class="admin-panel admin-lesson-footer">
+            <select id="lesson-parent" aria-label="Рівень уроку"><option value="">Головний рівень</option></select>
+            <button id="delete-lesson" class="admin-danger-link" type="button">Видалити урок</button>
+          </section>
         </div>
       </section>
     </section>
@@ -126,24 +126,8 @@
   </main>
 </div>
 
-<dialog id="course-settings" class="admin-course-settings">
-  <div class="admin-dialog-title"><h2>Налаштування курсу</h2><button id="course-settings-close" type="button" aria-label="Закрити">✕</button></div>
-  <section>
-    <h3>Загальна презентація</h3>
-    <label class="admin-field compact-field">Посилання<input id="presentation-url" type="url" placeholder="https://…" /></label>
-    <button id="choose-course-presentation" class="admin-secondary admin-upload-icon" type="button" title="Прикріпити файл">📁</button>
-    <p id="course-presentation-file-name" class="admin-file-name" hidden></p>
-    <p id="presentation-note" class="admin-inline-note"></p>
-  </section>
-  <section class="admin-dialog-danger">
-    <h3>Видалити курс</h3>
-    <p class="admin-inline-note">Зникнуть усі уроки, відео, домашні завдання й доступи учениць до цього курсу. Скасувати це буде неможливо.</p>
-    <button id="delete-course" class="admin-danger-link" type="button">Видалити курс назавжди</button>
-  </section>
-</dialog>
-
 <input id="course-asset-file" type="file" hidden />
 
-<script type="module" src="js/pages/admin-manage-course.js?v=20261113-2"></script>
+<script type="module" src="js/pages/admin-manage-course.js?v=20261113-3"></script>
 </body>
 </html>

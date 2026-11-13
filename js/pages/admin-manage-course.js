@@ -27,14 +27,11 @@ const elements = {
   lessonsCount: document.getElementById('lessons-count'),
   editorEmpty: document.getElementById('editor-empty'),
   editorContent: document.getElementById('editor-content'),
-  editorTitle: document.getElementById('editor-title'),
-  editorShortLabel: document.getElementById('editor-short-label'),
   lessonTitle: document.getElementById('lesson-title'),
   lessonShortLabel: document.getElementById('lesson-short-label'),
   lessonDescription: document.getElementById('lesson-description'),
   lessonParent: document.getElementById('lesson-parent'),
   addMaterialFile: document.getElementById('add-material-file'),
-  presentationUrl: document.getElementById('presentation-url'),
   videoList: document.getElementById('video-list'),
   newMaterial: document.getElementById('new-material'),
   homeworkEnabled: document.getElementById('homework-enabled'),
@@ -49,10 +46,6 @@ const elements = {
   error: document.getElementById('editor-error'),
   assetFile: document.getElementById('course-asset-file'),
   coursePresentationFileName: document.getElementById('course-presentation-file-name'),
-  presentationNote: document.getElementById('presentation-note'),
-  courseSettings: document.getElementById('course-settings'),
-  courseSettingsToggle: document.getElementById('course-settings-toggle'),
-  courseSettingsClose: document.getElementById('course-settings-close'),
 };
 
 const homeworkRequirementInputs = new Map(HOMEWORK_REQUIREMENTS.map(({ field }) => [
@@ -101,7 +94,6 @@ async function load({ keepSelection = true } = {}) {
 
   elements.courseTitle.value = courseState.title;
   elements.courseShortLabel.value = courseState.short_label || '';
-  elements.presentationUrl.value = courseState.presentationUrl;
   renderCoursePresentationFile();
   if (previewAccess?.student_id) {
     elements.preview.href = `course.html?course=${courseId}&student=${previewAccess.student_id}&admin=1`;
@@ -154,10 +146,9 @@ function renderEditor() {
   elements.editorContent.hidden = !lesson;
   if (!lesson) return;
 
-  elements.editorTitle.textContent = lesson.title;
-  elements.editorShortLabel.textContent = lesson.short_label || 'Урок';
   elements.lessonTitle.value = lesson.title;
   elements.lessonShortLabel.value = lesson.short_label || '';
+  autoSizeLabel();
   elements.lessonDescription.value = lesson.description || '';
 
   elements.lessonParent.innerHTML = '<option value="">Головний рівень</option>';
@@ -183,8 +174,12 @@ function renderEditor() {
 
 function renderCoursePresentationFile() {
   const hasFile = Boolean(courseState?.presentationFileKey);
-  elements.coursePresentationFileName.hidden = !hasFile;
-  elements.coursePresentationFileName.textContent = hasFile ? `Файл: ${courseState.presentationFileName}` : '';
+  setCoursePresentationNote(hasFile ? `Презентація курсу: ${courseState.presentationFileName}` : '');
+}
+
+function setCoursePresentationNote(text) {
+  elements.coursePresentationFileName.hidden = !text;
+  elements.coursePresentationFileName.textContent = text;
 }
 
 function renderComparison() {
@@ -201,30 +196,28 @@ function renderComparison() {
     card.innerHTML = `
       <div class="admin-comparison-section">
         <div class="admin-table-main-grid">
-          <label>Мітка<input type="text" data-table-field="short_label" value="${escapeAttribute(lesson.short_label || '')}" /></label>
-          <label>Назва<input type="text" data-table-field="title" value="${escapeAttribute(lesson.title)}" /></label>
+          <input type="text" data-table-field="short_label" placeholder="Мітка" aria-label="Мітка" value="${escapeAttribute(lesson.short_label || '')}" />
+          <input type="text" data-table-field="title" placeholder="Назва уроку" aria-label="Назва уроку" value="${escapeAttribute(lesson.title)}" />
         </div>
-        <label>Структура<select data-table-field="parent_lesson_id"></select></label>
-        <label>Опис<textarea data-table-field="description" rows="5">${escapeHtml(lesson.description || '')}</textarea></label>
+        <select data-table-field="parent_lesson_id" aria-label="Структура"></select>
+        <textarea data-table-field="description" rows="5" placeholder="Опис уроку" aria-label="Опис уроку">${escapeHtml(lesson.description || '')}</textarea>
       </div>
       <div class="admin-comparison-section">
         <div class="admin-table-videos"></div>
-        <div class="admin-table-add-video"><input type="text" data-table-new-video placeholder="YouTube-посилання, Enter" /><button class="admin-secondary admin-upload-icon" data-table-upload-video type="button" title="Завантажити відеофайл">⇧</button></div>
-        <div class="admin-table-presentation"><label>Презентація<input type="url" data-table-field="presentation_url" placeholder="Посилання" value="${escapeAttribute(lesson.presentation_url || '')}" /></label><button class="admin-secondary admin-upload-icon" data-table-upload-presentation type="button" title="Завантажити презентацію">⇧</button></div>
+        <div class="admin-table-add-video"><input type="text" data-table-new-material placeholder="Посилання на відео або презентацію, потім Enter" /><button class="admin-secondary admin-upload-icon" data-table-upload-material type="button" title="Прикріпити файл">📁</button></div>
       </div>
       <div class="admin-comparison-section">
         <div class="admin-table-subsection">
           <div class="admin-table-homework-row">
             <label class="admin-switch"><input data-table-homework-enabled type="checkbox" ${lesson.homework_enabled ? 'checked' : ''} /><span></span></label>
-            <strong class="admin-table-homework-label">Є ДЗ</strong>
             <div class="admin-table-requirements">
               ${HOMEWORK_REQUIREMENTS.map(({ field, label }) => `<label><input data-require="${field}" type="checkbox" ${lesson[field] ? 'checked' : ''} ${lesson.homework_enabled ? '' : 'disabled'} /> ${label}</label>`).join('')}
             </div>
           </div>
-          <textarea data-table-field="homework_description" rows="5" placeholder="Текст завдання" ${lesson.homework_enabled ? '' : 'disabled'}>${escapeHtml(lesson.homework_description || '')}</textarea>
+          <textarea data-table-field="homework_description" rows="5" placeholder="Завдання: опишіть, що потрібно виконати" ${lesson.homework_enabled ? '' : 'disabled'}>${escapeHtml(lesson.homework_description || '')}</textarea>
         </div>
         <div class="admin-table-subsection admin-table-access">
-          <label>Доступ<select data-table-field="next_lesson_access_rule">${NEXT_LESSON_ACCESS_RULES.map(({ value, label }) => `<option value="${value}" ${lesson.next_lesson_access_rule === value ? 'selected' : ''}>${label}</option>`).join('')}</select></label>
+          <select data-table-field="next_lesson_access_rule" aria-label="Доступ до наступного уроку">${NEXT_LESSON_ACCESS_RULES.map(({ value, label }) => `<option value="${value}" ${lesson.next_lesson_access_rule === value ? 'selected' : ''}>${label}</option>`).join('')}</select>
           ${renderTableAccessTiming(lesson)}
         </div>
       </div>
@@ -241,7 +234,6 @@ function renderComparison() {
     parentSelect.value = lesson.parent_lesson_id || '';
 
     const videosWrap = card.querySelector('.admin-table-videos');
-    if (!lesson.videos.length) videosWrap.innerHTML = '<span class="admin-table-empty">Без відео</span>';
     lesson.videos.forEach((video, index) => {
       const chip = document.createElement('span');
       chip.className = 'admin-video-chip';
@@ -249,6 +241,13 @@ function renderComparison() {
       chip.title = video.youtube_id;
       videosWrap.appendChild(chip);
     });
+    if (lesson.presentation_file_name || lesson.presentation_url) {
+      const chip = document.createElement('span');
+      chip.className = 'admin-video-chip';
+      chip.textContent = `🗎 ${lesson.presentation_file_name || 'Презентація'}`;
+      chip.title = lesson.presentation_url || lesson.presentation_file_name;
+      videosWrap.appendChild(chip);
+    }
 
     card.querySelectorAll('[data-table-field]').forEach((fieldEl) => {
       const field = fieldEl.dataset.tableField;
@@ -289,12 +288,16 @@ function renderComparison() {
       });
     });
 
-    const addVideoInput = card.querySelector('[data-table-new-video]');
-    addVideoInput.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') { event.preventDefault(); addVideoToLesson(lesson, addVideoInput); }
+    const addMaterialInput = card.querySelector('[data-table-new-material]');
+    addMaterialInput.addEventListener('keydown', async (event) => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      const value = addMaterialInput.value.trim();
+      if (!value) return;
+      if (looksLikeYoutube(value)) await addVideoToLesson(lesson, addMaterialInput);
+      else { await addPresentationLink(lesson, addMaterialInput); renderComparison(); }
     });
-    card.querySelector('[data-table-upload-video]').addEventListener('click', () => chooseAsset({ assetType: 'lesson-video', lessonId: lesson.id }));
-    card.querySelector('[data-table-upload-presentation]').addEventListener('click', () => chooseAsset({ assetType: 'lesson-presentation', lessonId: lesson.id }));
+    card.querySelector('[data-table-upload-material]').addEventListener('click', () => chooseAsset({ assetType: 'lesson-material', lessonId: lesson.id }));
 
     elements.comparisonBody.appendChild(card);
   }
@@ -452,27 +455,20 @@ elements.courseShortLabel.addEventListener('input', () => {
   scheduleSave('course-short-label', () => supabase.from('courses').update({ short_label: value.trim() }).eq('id', courseId));
 });
 
-elements.presentationUrl.addEventListener('input', () => {
-  const value = elements.presentationUrl.value.trim();
-  courseState.presentationUrl = value;
-  scheduleSave('course-presentation', () => value
-    ? supabase.from('presentations').upsert({
-      course_id: courseId,
-      embed_url: value,
-      file_key: courseState.presentationFileKey,
-      file_name: courseState.presentationFileName,
-      file_content_type: courseState.presentationFileContentType,
-    })
-    : courseState.presentationFileKey
-      ? supabase.from('presentations').upsert({
-        course_id: courseId,
-        embed_url: '',
-        file_key: courseState.presentationFileKey,
-        file_name: courseState.presentationFileName,
-        file_content_type: courseState.presentationFileContentType,
-      })
-      : supabase.from('presentations').delete().eq('course_id', courseId));
-});
+// Мітка росте під свій текст, щоб назва уроку не наповзала на неї й не
+// лишалось порожнього місця, коли мітка коротка.
+const labelRuler = document.createElement('span');
+labelRuler.style.cssText = 'position:absolute;visibility:hidden;white-space:pre;';
+document.body.appendChild(labelRuler);
+
+function autoSizeLabel() {
+  const input = elements.lessonShortLabel;
+  const style = getComputedStyle(input);
+  labelRuler.style.font = style.font;
+  labelRuler.style.letterSpacing = style.letterSpacing;
+  labelRuler.textContent = input.value || input.placeholder;
+  input.style.width = `${labelRuler.offsetWidth + 20}px`;
+}
 
 function bindLessonText(element, field, { refreshTitles = false } = {}) {
   element.addEventListener('input', () => {
@@ -482,8 +478,7 @@ function bindLessonText(element, field, { refreshTitles = false } = {}) {
     const value = element.value;
     lesson[field] = value;
     if (refreshTitles) {
-      elements.editorTitle.textContent = lesson.title || 'Без назви';
-      elements.editorShortLabel.textContent = lesson.short_label || 'Урок';
+      if (element === elements.lessonShortLabel) autoSizeLabel();
       renderLessonList();
     }
     scheduleSave(`lesson-${lessonId}-${field}`, () => supabase.from('lessons').update({ [field]: value }).eq('id', lessonId));
@@ -566,7 +561,7 @@ async function createLesson() {
     .insert({
       course_id: courseId,
       title: 'Новий урок',
-      short_label: String(lessons.length + 1),
+      short_label: '',
       order_index: lessons.length,
     })
     .select('id')
@@ -723,10 +718,9 @@ async function uploadSelectedAsset(file) {
   const target = pendingAssetTarget;
   pendingAssetTarget = null;
   if (!target || !file) return;
-  const messageTarget = target.assetType === 'course-presentation' ? elements.presentationNote : elements.error;
   try {
     if (target.assetType === 'course-presentation') {
-      elements.presentationNote.textContent = `Завантажуємо ${file.name}: 0%`;
+      setCoursePresentationNote(`Завантажуємо ${file.name}: 0%`);
     }
     const uploaded = await uploadCourseAsset({
       courseId,
@@ -735,7 +729,7 @@ async function uploadSelectedAsset(file) {
       file,
       onProgress: (progress) => {
         const text = `Завантажуємо ${file.name}: ${Math.round(progress * 100)}%`;
-        if (target.assetType === 'course-presentation') elements.presentationNote.textContent = text;
+        if (target.assetType === 'course-presentation') setCoursePresentationNote(text);
       },
     });
 
@@ -754,7 +748,7 @@ async function uploadSelectedAsset(file) {
       });
       if (error) throw error;
       renderCoursePresentationFile();
-      elements.presentationNote.textContent = 'Файл завантажено ✓';
+      setCoursePresentationNote(`Презентація курсу: ${uploaded.fileName}`);
       return;
     }
 
@@ -788,7 +782,7 @@ async function uploadSelectedAsset(file) {
     await load();
   } catch (error) {
     console.error('course asset upload failed', error);
-    if (target.assetType === 'course-presentation') elements.presentationNote.textContent = error.message || 'Не вдалося завантажити файл.';
+    if (target.assetType === 'course-presentation') setCoursePresentationNote(error.message || 'Не вдалося завантажити файл.');
     else showError(error.message || 'Не вдалося завантажити файл.');
   }
 }
@@ -806,8 +800,6 @@ elements.assetFile.addEventListener('change', () => {
   }
   uploadSelectedAsset(file);
 });
-elements.courseSettingsToggle.addEventListener('click', () => elements.courseSettings.showModal());
-elements.courseSettingsClose.addEventListener('click', () => elements.courseSettings.close());
 
 // Курс видаляється разом з усім, що на ньому висить, тому питаємо двічі:
 // підтвердженням і введенням назви.
@@ -826,10 +818,6 @@ document.getElementById('delete-course').addEventListener('click', async () => {
   }
   window.location.href = 'admin-manage.html';
 });
-elements.courseSettings.addEventListener('click', (event) => {
-  if (event.target === elements.courseSettings) elements.courseSettings.close();
-});
-
 elements.lessonSearch.addEventListener('input', renderLessonList);
 elements.preview.addEventListener('click', async (event) => {
   event.preventDefault();
