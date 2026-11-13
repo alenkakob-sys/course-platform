@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Редагування курсу · Адмін-панель</title>
-<link rel="stylesheet" href="css/style.css?v=20261113-1" />
+<link rel="stylesheet" href="css/style.css?v=20261113-2" />
 </head>
 <body class="admin-body admin-editor-body">
 <div class="admin-shell" id="admin-shell">
@@ -59,33 +59,20 @@
 
           <section class="admin-panel admin-primary-fields">
             <div class="admin-form-grid lesson-identity-grid">
-              <label>Мітка<input id="lesson-short-label" type="text" placeholder="7.1" /></label>
-              <label>Назва уроку<input id="lesson-title" type="text" /></label>
-              <label>Структура
-                <select id="lesson-parent"><option value="">Головний рівень</option></select>
-              </label>
+              <input id="lesson-short-label" type="text" placeholder="Мітка" aria-label="Мітка" title="Мітка" />
+              <input id="lesson-title" type="text" placeholder="Назва уроку" aria-label="Назва уроку" title="Назва уроку" />
+              <select id="lesson-parent" aria-label="Структура" title="Структура"><option value="">Головний рівень</option></select>
             </div>
-            <label class="admin-field">Опис<textarea id="lesson-description" rows="6" placeholder="Що учениця вивчить у цьому уроці"></textarea></label>
+            <textarea id="lesson-description" class="admin-field" rows="6" placeholder="Опис уроку" aria-label="Опис уроку"></textarea>
           </section>
 
           <div class="admin-lesson-data-grid admin-single-sections">
             <section class="admin-panel admin-materials-panel">
               <h3>Матеріали</h3>
-              <div class="admin-material-subsection">
-                <div class="admin-section-title"><h4>Відео</h4><span id="video-count"></span></div>
               <div id="video-list" class="admin-video-list"></div>
               <div class="admin-add-row">
-                <input id="new-video" type="text" placeholder="YouTube-посилання — і Enter" />
-                <button id="add-video-file" class="admin-secondary admin-upload-icon" type="button" title="Завантажити відеофайл">⇧</button>
-                </div>
-              </div>
-              <div class="admin-material-subsection">
-                <h4>Презентація</h4>
-                <div class="admin-add-row">
-                  <input id="lesson-presentation-url" type="url" placeholder="Посилання" />
-                  <button id="lesson-presentation-file-button" class="admin-secondary admin-upload-icon" type="button" title="Завантажити презентацію">⇧</button>
-                </div>
-                <p id="lesson-presentation-file-name" class="admin-file-name" hidden></p>
+                <input id="new-material" type="text" placeholder="Посилання на відео або презентацію, потім Enter" />
+                <button id="add-material-file" class="admin-secondary admin-upload-icon" type="button" title="Прикріпити файл">📁</button>
               </div>
             </section>
 
@@ -144,14 +131,19 @@
   <section>
     <h3>Загальна презентація</h3>
     <label class="admin-field compact-field">Посилання<input id="presentation-url" type="url" placeholder="https://…" /></label>
-    <button id="choose-course-presentation" class="admin-secondary admin-upload-icon" type="button" title="Завантажити файл">⇧</button>
+    <button id="choose-course-presentation" class="admin-secondary admin-upload-icon" type="button" title="Прикріпити файл">📁</button>
     <p id="course-presentation-file-name" class="admin-file-name" hidden></p>
     <p id="presentation-note" class="admin-inline-note"></p>
+  </section>
+  <section class="admin-dialog-danger">
+    <h3>Видалити курс</h3>
+    <p class="admin-inline-note">Зникнуть усі уроки, відео, домашні завдання й доступи учениць до цього курсу. Скасувати це буде неможливо.</p>
+    <button id="delete-course" class="admin-danger-link" type="button">Видалити курс назавжди</button>
   </section>
 </dialog>
 
 <input id="course-asset-file" type="file" hidden />
 
-<script type="module" src="js/pages/admin-manage-course.js?v=20261113-1"></script>
+<script type="module" src="js/pages/admin-manage-course.js?v=20261113-2"></script>
 </body>
 </html>

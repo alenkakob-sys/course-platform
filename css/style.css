@@ -726,6 +726,12 @@ button.btn-dashed { border: 1px dashed var(--accent); color: var(--accent); back
 
 .admin-lesson-data-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(280px, .95fr); gap: 12px; }
 .admin-materials-panel > h3 { margin-bottom: 15px; }
+/* Порожнього списку матеріалів не буває: поки нічого не прикріплено, його
+   просто немає, і відступ під ним теж зайвий. */
+.admin-materials-panel .admin-video-list:empty { display: none; }
+.admin-dialog-danger { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--admin-line); }
+.admin-dialog-danger h3 { margin: 0 0 6px; font-size: 14px; }
+.admin-dialog-danger .admin-inline-note { margin: 0 0 10px; }
 .admin-material-subsection + .admin-material-subsection { margin-top: 17px; padding-top: 17px; border-top: 1px solid var(--admin-line); }
 .admin-material-subsection h4 { margin: 0 0 10px; font-size: 13px; }
 .admin-material-subsection .admin-section-title { margin-bottom: 0; }
@@ -733,9 +739,8 @@ button.btn-dashed { border: 1px dashed var(--accent); color: var(--accent); back
 .admin-homework-formats legend { margin-bottom: 8px; color: var(--admin-muted); font-size: 12.5px; }
 .admin-homework-formats label { display: flex; align-items: center; gap: 6px; color: var(--admin-text); font-size: 13px; }
 .admin-homework-formats input { width: auto; accent-color: var(--admin-gold); }
-.lesson-identity-grid > label { display: grid; grid-template-rows: auto 42px; align-items: stretch; min-width: 0; }
-.lesson-identity-grid input,
-.lesson-identity-grid select { height: 42px; min-width: 0; margin-top: 6px; }
+.lesson-identity-grid > input,
+.lesson-identity-grid > select { height: 42px; min-width: 0; margin-top: 0; }
 .admin-lesson-editor,
 .admin-primary-fields { min-width: 0; overflow: hidden; }
 .admin-upload-icon { width: 36px !important; min-width: 36px !important; height: 36px; min-height: 36px !important; padding: 0 !important; color: var(--admin-gold) !important; font-size: 18px; line-height: 1; }
@@ -761,7 +766,7 @@ button.btn-dashed { border: 1px dashed var(--accent); color: var(--accent); back
   .admin-compact-header { grid-template-columns: minmax(240px, 1fr) auto; }
   .admin-compact-header .admin-header-actions { grid-column: 1 / -1; justify-content: flex-end; }
   .lesson-identity-grid { grid-template-columns: 92px minmax(0, 1fr); }
-  .lesson-identity-grid label:last-child { grid-column: 1 / -1; }
+  .lesson-identity-grid > select { grid-column: 1 / -1; }
 }
 
 @media (max-width: 980px) {

@@ -33,14 +33,10 @@ const elements = {
   lessonShortLabel: document.getElementById('lesson-short-label'),
   lessonDescription: document.getElementById('lesson-description'),
   lessonParent: document.getElementById('lesson-parent'),
-  lessonPresentationUrl: document.getElementById('lesson-presentation-url'),
-  lessonPresentationFileButton: document.getElementById('lesson-presentation-file-button'),
-  lessonPresentationFileName: document.getElementById('lesson-presentation-file-name'),
+  addMaterialFile: document.getElementById('add-material-file'),
   presentationUrl: document.getElementById('presentation-url'),
-  videoCount: document.getElementById('video-count'),
   videoList: document.getElementById('video-list'),
-  newVideo: document.getElementById('new-video'),
-  addVideoFile: document.getElementById('add-video-file'),
+  newMaterial: document.getElementById('new-material'),
   homeworkEnabled: document.getElementById('homework-enabled'),
   homeworkSettings: document.getElementById('homework-settings'),
   homeworkDescription: document.getElementById('homework-description'),
@@ -173,13 +169,11 @@ function renderEditor() {
   }
   elements.lessonParent.value = lesson.parent_lesson_id || '';
 
-  renderVideos(lesson);
+  renderMaterials(lesson);
   elements.homeworkEnabled.checked = lesson.homework_enabled;
   elements.homeworkSettings.hidden = !lesson.homework_enabled;
   for (const [field, input] of homeworkRequirementInputs) input.checked = lesson[field];
   elements.homeworkDescription.value = lesson.homework_description || '';
-  elements.lessonPresentationUrl.value = lesson.presentation_url || '';
-  renderLessonPresentationFile(lesson);
   elements.accessRule.value = lesson.next_lesson_access_rule;
   elements.accessDelayHours.value = String(lesson.next_lesson_delay_hours);
   elements.accessDelayDays.value = String(lesson.next_lesson_delay_days);
@@ -191,12 +185,6 @@ function renderCoursePresentationFile() {
   const hasFile = Boolean(courseState?.presentationFileKey);
   elements.coursePresentationFileName.hidden = !hasFile;
   elements.coursePresentationFileName.textContent = hasFile ? `Файл: ${courseState.presentationFileName}` : '';
-}
-
-function renderLessonPresentationFile(lesson) {
-  const hasFile = Boolean(lesson.presentation_file_key);
-  elements.lessonPresentationFileName.hidden = !hasFile;
-  elements.lessonPresentationFileName.textContent = hasFile ? `Файл: ${lesson.presentation_file_name}` : '';
 }
 
 function renderComparison() {
@@ -322,13 +310,10 @@ function renderTableAccessTiming(lesson) {
   return '';
 }
 
-function renderVideos(lesson) {
-  elements.videoCount.textContent = `${lesson.videos.length}`;
+// Відео й презентація живуть одним списком: поки нічого не прикріплено,
+// порожніх полів не показуємо зовсім, лишається тільки рядок додавання.
+function renderMaterials(lesson) {
   elements.videoList.innerHTML = '';
-  if (!lesson.videos.length) {
-    elements.videoList.innerHTML = '<div class="admin-empty-card">Відео ще не додано.</div>';
-    return;
-  }
 
   lesson.videos.forEach((video, index) => {
     const row = document.createElement('article');
@@ -348,6 +333,54 @@ function renderVideos(lesson) {
     row.querySelector('[data-action="delete"]').addEventListener('click', () => deleteVideo(video.id));
     elements.videoList.appendChild(row);
   });
+  // Презентація йде після відео: спершу те, що дивляться.
+  renderPresentationRow(lesson);
+}
+
+function renderPresentationRow(lesson) {
+  const name = lesson.presentation_file_name || lesson.presentation_url;
+  if (!name) return;
+  const row = document.createElement('article');
+  row.className = 'admin-video-item';
+  row.innerHTML = `
+    <span class="admin-file-icon" aria-hidden="true">🗎</span>
+    <div><h4>${escapeHtml(lesson.presentation_file_name || 'Презентація')}</h4><p>${escapeHtml(lesson.presentation_file_key ? 'Завантажений файл' : lesson.presentation_url)}</p></div>
+    <div class="admin-video-actions"><button data-action="delete" class="danger" title="Прибрати">✕</button></div>
+  `;
+  row.querySelector('[data-action="delete"]').addEventListener('click', () => removePresentation(lesson));
+  elements.videoList.appendChild(row);
+}
+
+async function removePresentation(lesson) {
+  if (!confirm('Прибрати презентацію з цього уроку?')) return;
+  const patch = { presentation_url: '', presentation_file_key: null, presentation_file_name: null, presentation_file_content_type: null };
+  const { error } = await supabase.from('lessons').update(patch).eq('id', lesson.id);
+  if (error) {
+    showError('Не вдалося прибрати презентацію.');
+    return;
+  }
+  Object.assign(lesson, patch);
+  renderMaterials(lesson);
+  renderComparison();
+}
+
+// Поле одне, тому воно само вирішує, що йому дали: посилання на YouTube
+// стає відео, будь-яке інше посилання стає презентацією уроку.
+function looksLikeYoutube(value) {
+  return /(?:youtu\.be\/|youtube\.com\/)/.test(value) || /^[\w-]{11}$/.test(value);
+}
+
+async function addPresentationLink(lesson, input) {
+  const value = input.value.trim();
+  const { error } = await supabase.from('lessons').update({ presentation_url: value }).eq('id', lesson.id);
+  if (error) {
+    showError('Не вдалося зберегти посилання.');
+    return;
+  }
+  lesson.presentation_url = value;
+  input.value = '';
+  renderMaterials(lesson);
+  renderComparison();
 }
 
 function selectLesson(lessonId) {
@@ -461,7 +494,6 @@ bindLessonText(elements.lessonTitle, 'title', { refreshTitles: true });
 bindLessonText(elements.lessonShortLabel, 'short_label', { refreshTitles: true });
 bindLessonText(elements.lessonDescription, 'description');
 bindLessonText(elements.homeworkDescription, 'homework_description');
-bindLessonText(elements.lessonPresentationUrl, 'presentation_url');
 
 elements.lessonParent.addEventListener('change', () => {
   const lesson = selectedLesson();
@@ -612,11 +644,14 @@ async function addVideoToLesson(lesson, input) {
   await load();
 }
 
-elements.newVideo.addEventListener('keydown', async (event) => {
+elements.newMaterial.addEventListener('keydown', async (event) => {
   if (event.key !== 'Enter') return;
   event.preventDefault();
   const lesson = selectedLesson();
-  if (lesson) await addVideoToLesson(lesson, elements.newVideo);
+  const value = elements.newMaterial.value.trim();
+  if (!lesson || !value) return;
+  if (looksLikeYoutube(value)) await addVideoToLesson(lesson, elements.newMaterial);
+  else await addPresentationLink(lesson, elements.newMaterial);
 });
 
 async function deleteVideo(videoId) {
@@ -634,7 +669,7 @@ async function moveVideo(index, direction) {
   [videos[index], videos[target]] = [videos[target], videos[index]];
   videos.forEach((video, orderIndex) => { video.order_index = orderIndex; });
   lesson.videos = videos;
-  renderVideos(lesson);
+  renderMaterials(lesson);
   await runSave(async () => {
     const results = await Promise.all(videos.map((video) =>
       supabase.from('videos').update({ order_index: video.order_index }).eq('id', video.id)
@@ -674,9 +709,12 @@ elements.toggleSidebar.addEventListener('click', () => {
   applySidebarState();
 });
 
+const DOCUMENT_ACCEPT = '.pdf,.ppt,.pptx,.doc,.docx,application/pdf,application/msword,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
 function chooseAsset(target) {
   pendingAssetTarget = target;
-  elements.assetFile.accept = target.assetType === 'lesson-video' ? 'video/*' : '.pdf,.ppt,.pptx,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation';
+  if (target.assetType === 'lesson-material') elements.assetFile.accept = `video/*,${DOCUMENT_ACCEPT}`;
+  else elements.assetFile.accept = target.assetType === 'lesson-video' ? 'video/*' : DOCUMENT_ACCEPT;
   elements.assetFile.value = '';
   elements.assetFile.click();
 }
@@ -731,7 +769,7 @@ async function uploadSelectedAsset(file) {
       const { error } = await supabase.from('lessons').update(patch).eq('id', lesson.id);
       if (error) throw error;
       Object.assign(lesson, patch);
-      renderLessonPresentationFile(lesson);
+      renderMaterials(lesson);
       renderComparison();
       return;
     }
@@ -756,17 +794,38 @@ async function uploadSelectedAsset(file) {
 }
 
 document.getElementById('choose-course-presentation').addEventListener('click', () => chooseAsset({ assetType: 'course-presentation', lessonId: null }));
-elements.lessonPresentationFileButton.addEventListener('click', () => {
+elements.addMaterialFile.addEventListener('click', () => {
   const lesson = selectedLesson();
-  if (lesson) chooseAsset({ assetType: 'lesson-presentation', lessonId: lesson.id });
+  if (lesson) chooseAsset({ assetType: 'lesson-material', lessonId: lesson.id });
 });
-elements.addVideoFile.addEventListener('click', () => {
-  const lesson = selectedLesson();
-  if (lesson) chooseAsset({ assetType: 'lesson-video', lessonId: lesson.id });
+elements.assetFile.addEventListener('change', () => {
+  const file = elements.assetFile.files[0];
+  // Відео — відео, усе інше вважаємо презентацією уроку.
+  if (file && pendingAssetTarget?.assetType === 'lesson-material') {
+    pendingAssetTarget.assetType = file.type.startsWith('video/') ? 'lesson-video' : 'lesson-presentation';
+  }
+  uploadSelectedAsset(file);
 });
-elements.assetFile.addEventListener('change', () => uploadSelectedAsset(elements.assetFile.files[0]));
 elements.courseSettingsToggle.addEventListener('click', () => elements.courseSettings.showModal());
 elements.courseSettingsClose.addEventListener('click', () => elements.courseSettings.close());
+
+// Курс видаляється разом з усім, що на ньому висить, тому питаємо двічі:
+// підтвердженням і введенням назви.
+document.getElementById('delete-course').addEventListener('click', async () => {
+  const title = courseState?.title || '';
+  const typed = prompt(`Видалити курс «${title}» назавжди?\n\nЗникнуть усі уроки, відео, домашні завдання й доступи учениць.\n\nЩоб підтвердити, впишіть назву курсу:`);
+  if (typed === null) return;
+  if (typed.trim() !== title.trim()) {
+    alert('Назва не збіглася. Курс лишився на місці.');
+    return;
+  }
+  const { error } = await supabase.from('courses').delete().eq('id', courseId);
+  if (error) {
+    showError('Не вдалося видалити курс.');
+    return;
+  }
+  window.location.href = 'admin-manage.html';
+});
 elements.courseSettings.addEventListener('click', (event) => {
   if (event.target === elements.courseSettings) elements.courseSettings.close();
 });
