@@ -270,6 +270,8 @@ button.btn-dashed { border: 1px dashed var(--accent); color: var(--accent); back
   --admin-muted: #aeb4ba;
   --admin-gold: #e6a900;
   --admin-gold-soft: rgba(230, 169, 0, .12);
+  --admin-green: #5bc98a;
+  --admin-green-soft: rgba(91, 201, 138, .14);
   --admin-blue: #cfe1fa;
   --admin-blue-text: #26384e;
   --admin-green: #55cf89;
@@ -436,23 +438,32 @@ button.btn-dashed { border: 1px dashed var(--accent); color: var(--accent); back
 /* У формі курси йдуть стовпчиком, і волоска над ними бути не повинно. */
 .admin-invite-panel #pending-course-options { flex-direction: column; align-items: flex-start; gap: 8px; padding-top: 0; border-top: 0; flex-wrap: nowrap; }
 .invite-term { flex: 0 0 auto; }
+.invite-term input:checked + span { color: var(--admin-green); border-color: var(--admin-green); background: var(--admin-green-soft); }
 .admin-invite-panel #invite-submit { flex: 0 0 auto; }
 .admin-invite-panel #invite-status { margin: 12px 0 0; font-size: 13px; }
 .admin-students-list { display: grid; gap: 12px; }
 .admin-student-card { border: 0; border-radius: 12px; background: var(--admin-surface); padding: 16px 18px; }
-/* Два рядки: пошта і «Видалити акаунт» вгорі, дата й галочка строку внизу.
-   Сітка потрібна, щоб галочка стала рівно під кнопкою, по правому краю. */
+/* Два рядки: пошта і «Видалити акаунт» вгорі, дата внизу. */
 .admin-student-main {
   display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
   column-gap: 13px; row-gap: 3px; align-items: center; margin-bottom: 14px;
 }
 .admin-student-main .admin-avatar { grid-row: span 2; }
 .admin-student-main h2 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.admin-student-main p { min-width: 0; }
-.student-term { justify-self: end; display: flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; }
-.student-term input { width: auto; margin: 0; accent-color: var(--admin-gold); cursor: pointer; }
-.student-term span { color: var(--admin-muted); font-size: 12.5px; }
-.student-term input:checked + span { color: var(--admin-gold); }
+.admin-student-main p { min-width: 0; grid-column: 2 / -1; }
+/* Курси стовпчиком ліворуч, галочка строку праворуч. Якщо відкритий лише один
+   курс, галочка стає в його рядок; інакше ділить висоту навпіл. */
+.admin-access-grid {
+  display: grid; grid-template-columns: minmax(0, max-content) auto;
+  column-gap: 12px; row-gap: 8px; align-items: center;
+  padding-top: 13px; border-top: 1px solid var(--admin-line);
+}
+.admin-access-grid > .admin-course-check { grid-column: 1; }
+.student-term { grid-column: 2; justify-self: end; display: flex; align-items: center; gap: 7px; cursor: pointer; }
+.student-term input { flex: 0 0 auto; }
+.student-term input { width: auto; margin: 0; accent-color: var(--admin-green); cursor: pointer; }
+.student-term span { color: var(--admin-muted); font-size: 12.5px; line-height: 1.3; text-align: right; white-space: pre; }
+.student-term.on span { color: var(--admin-green); }
 .student-term input:disabled { opacity: .4; cursor: default; }
 .student-term input:disabled + span { opacity: .4; }
 /* Ще не заходила: помітно, але без тривоги. */
@@ -464,7 +475,7 @@ button.btn-dashed { border: 1px dashed var(--accent); color: var(--accent); back
 .admin-access-list { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 13px; border-top: 1px solid var(--admin-line); }
 .admin-course-check { cursor: pointer; }
 .admin-course-check input { position: absolute; opacity: 0; pointer-events: none; }
-.admin-course-check span { display: inline-flex; align-items: center; min-height: 34px; border: 1px solid transparent; border-radius: 99px; padding: 0 13px; background: var(--admin-surface-2); color: var(--admin-muted); font-size: 13px; transition: .16s; }
+.admin-course-check span { display: inline-flex; align-items: center; min-height: 34px; border: 1px solid transparent; border-radius: 99px; padding: 0 13px; background: var(--admin-surface-2); color: var(--admin-muted); font-size: 13px; white-space: nowrap; transition: .16s; }
 .admin-course-check input:checked + span { color: var(--admin-gold); border-color: var(--admin-gold); background: var(--admin-gold-soft); }
 .admin-course-check:hover span { background: #333940; }
 .admin-course-check input:focus-visible + span { box-shadow: 0 0 0 2px rgba(255, 255, 255, .3); }

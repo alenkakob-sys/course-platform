@@ -1,6 +1,6 @@
-import { supabase } from './supabaseClient.js?v=20261112-3';
-import { INSTAGRAM_HANDLE } from './config.js?v=20261112-3';
-import { accessDaysLeft, accessLastDay } from './access-term.js?v=20261112-3';
+import { supabase } from './supabaseClient.js?v=20261113-1';
+import { INSTAGRAM_HANDLE } from './config.js?v=20261113-1';
+import { accessDaysLeft, accessLastDay } from './access-term.js?v=20261113-1';
 
 // Попередження про закінчення доступу. Показуємо за тиждень: раніше воно
 // просто набридає, пізніше вже немає часу щось зробити.

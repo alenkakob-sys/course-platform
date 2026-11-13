@@ -1,7 +1,7 @@
-import { supabase } from '../supabaseClient.js?v=20261112-3';
-import { requireAdmin, wireLogoutButton } from '../auth.js?v=20261112-3';
-import { FUNCTIONS_URL } from '../config.js?v=20261112-3';
-import { monthAccessExpiry, accessLastDay } from '../access-term.js?v=20261112-3';
+import { supabase } from '../supabaseClient.js?v=20261113-1';
+import { requireAdmin, wireLogoutButton } from '../auth.js?v=20261113-1';
+import { FUNCTIONS_URL } from '../config.js?v=20261113-1';
+import { monthAccessExpiry, accessLastDay } from '../access-term.js?v=20261113-1';
 
 const auth = await requireAdmin();
 if (!auth) throw new Error('not admin');
@@ -182,18 +182,22 @@ function studentCard(student) {
       <h2>${escapeHtml(displayName)}</h2>
       <button type="button" class="admin-danger-link" data-delete>Видалити акаунт</button>
       <p>${student.full_name ? `${escapeHtml(student.email)} · ` : ''}${student.invited_at ? `додана ${formatDate(student.invited_at)}` : `перший вхід ${formatDate(student.created_at)}`}</p>
-      ${termCheckHtml(courseCount === 0)}
     </div>
-    <div class="admin-access-list" aria-label="Доступ до курсів"></div>
+    <div class="admin-access-grid" aria-label="Доступ до курсів"></div>
   `;
-  const termBox = card.querySelector('[data-term]');
-  termBox.checked = [...(access[student.id] || [])].some((courseId) => expiry[`${student.id}|${courseId}`]);
-  termBox.addEventListener('change', () => updateTerm(student, termBox));
-  fillCourseChecks(card.querySelector('.admin-access-list'), {
+  const grid = card.querySelector('.admin-access-grid');
+  fillCourseChecks(grid, {
     isChecked: (course) => access[student.id]?.has(course.id) || false,
     onToggle: (course, checkbox) => updateAccess(student.id, course.id, checkbox),
-    termOf: (course) => expiry[`${student.id}|${course.id}`] || null,
   });
+  const granted = [...(access[student.id] || [])];
+  const termBox = addTermCheck(grid, {
+    disabled: courseCount === 0,
+    until: granted.map((id) => expiry[`${student.id}|${id}`]).find(Boolean) || null,
+    from: granted.map((id) => grantedAt[`${student.id}|${id}`]).find(Boolean) || null,
+    row: termRow(granted),
+  });
+  termBox.addEventListener('change', () => updateTerm(student, termBox));
   card.querySelector('[data-delete]').addEventListener('click', () => deleteStudent(student, card));
   return card;
 }
@@ -207,17 +211,21 @@ function pendingCard(item) {
       <h2>${escapeHtml(item.email)}</h2>
       <button type="button" class="admin-danger-link" data-remove>Прибрати</button>
       <p>${formatDate(item.createdAt) ? `Додана ${formatDate(item.createdAt)} · ` : ''}ще не заходила</p>
-      ${termCheckHtml(item.courses.size === 0)}
     </div>
-    <div class="admin-access-list" aria-label="Доступ до курсів"></div>
+    <div class="admin-access-grid" aria-label="Доступ до курсів"></div>
   `;
-  const termBox = card.querySelector('[data-term]');
-  termBox.checked = Boolean(pendingMonths[item.email]);
-  termBox.addEventListener('change', () => updatePendingTerm(item, termBox));
-  fillCourseChecks(card.querySelector('.admin-access-list'), {
+  const grid = card.querySelector('.admin-access-grid');
+  fillCourseChecks(grid, {
     isChecked: (course) => item.courses.has(course.id),
     onToggle: (course, checkbox) => updatePendingAccess(item, course.id, checkbox),
   });
+  // Вона ще не заходила, тож дати початку немає: строк почнеться з першого входу.
+  const termBox = addTermCheck(grid, {
+    disabled: item.courses.size === 0,
+    pending: Boolean(pendingMonths[item.email]),
+    row: termRow([...item.courses]),
+  });
+  termBox.addEventListener('change', () => updatePendingTerm(item, termBox));
   card.querySelector('[data-remove]').addEventListener('click', async () => {
     if (!confirm(`Прибрати ${item.email} зі списку очікування?`)) return;
     const { error } = await supabase.from('pending_students').delete().eq('email', item.email);
@@ -230,10 +238,43 @@ function pendingCard(item) {
   return card;
 }
 
-// Галочка строку стоїть у тому ж рядку, що й дата додавання, і притиснута до
-// правого краю. Без жодного обраного курсу їй нема на що діяти, тому глушимо.
-function termCheckHtml(disabled) {
-  return `<label class="student-term"><input type="checkbox" data-term ${disabled ? 'disabled' : ''} /><span>доступ на 1 місяць</span></label>`;
+// Галочка строку стоїть праворуч від бульбашок курсів. Коли відкритий лише
+// один курс, вона стає рівно в його рядок; інакше ділить висоту навпіл.
+// Без жодного обраного курсу їй нема на що діяти, тому глушимо.
+function termRow(grantedIds) {
+  if (grantedIds.length !== 1) return null;
+  const index = courses.findIndex((course) => course.id === grantedIds[0]);
+  return index < 0 ? null : index + 1;
+}
+
+// Дату показує сама галочка, а не бульбашка курсу: так строк читається одним
+// рядком і не дублюється стільки разів, скільки в учениці курсів.
+function termText({ checked, from, until }) {
+  if (!checked || !until) return 'доступ на 1 місяць';
+  const last = accessLastDay(until);
+  const over = new Date(until).getTime() <= Date.now();
+  // Два рядки: інакше довгий підпис розчавлює бульбашки курсів на телефоні.
+  if (over && from) return `з ${formatDate(from)}\nдо ${formatDate(last)}`;
+  return `до ${formatDate(last)}`;
+}
+
+function addTermCheck(grid, { disabled, until = null, from = null, pending = false, row = null }) {
+  const checked = pending || Boolean(until);
+  const label = document.createElement('label');
+  label.className = 'student-term';
+  if (checked) label.classList.add('on');
+  if (until && new Date(until).getTime() <= Date.now()) label.classList.add('over');
+  label.style.gridRow = row ? String(row) : '1 / -1';
+  const input = document.createElement('input');
+  input.type = 'checkbox';
+  input.setAttribute('data-term', '');
+  input.checked = checked;
+  input.disabled = disabled;
+  const text = document.createElement('span');
+  text.textContent = termText({ checked, from, until });
+  label.append(input, text);
+  grid.appendChild(label);
+  return input;
 }
 
 // Строк рахуємо від дня, коли доступ ВИДАНО, а не від сьогодні: інакше
@@ -277,7 +318,7 @@ async function updatePendingTerm(item, checkbox) {
   await load();
 }
 
-function fillCourseChecks(container, { isChecked, onToggle, termOf }) {
+function fillCourseChecks(container, { isChecked, onToggle }) {
   if (!courses.length) {
     container.innerHTML = '<span class="admin-count">Спочатку створіть курс.</span>';
     return;
@@ -289,8 +330,7 @@ function fillCourseChecks(container, { isChecked, onToggle, termOf }) {
     checkbox.type = 'checkbox';
     checkbox.checked = isChecked(course);
     const text = document.createElement('span');
-    const until = termOf ? termOf(course) : null;
-    text.textContent = until ? `${course.title} · до ${formatDate(accessLastDay(until))}` : course.title;
+    text.textContent = course.title;
     checkbox.addEventListener('change', () => onToggle(course, checkbox));
     label.append(checkbox, text);
     container.appendChild(label);
