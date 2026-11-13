@@ -175,7 +175,6 @@ function studentCard(student) {
   const card = document.createElement('article');
   card.className = 'admin-student-card';
   const displayName = student.full_name || student.email;
-  const courseCount = access[student.id]?.size || 0;
   card.innerHTML = `
     <div class="admin-student-main">
       <span class="admin-avatar">${escapeHtml(initials(displayName))}</span>
@@ -186,18 +185,29 @@ function studentCard(student) {
     <div class="admin-access-grid" aria-label="Доступ до курсів"></div>
   `;
   const grid = card.querySelector('.admin-access-grid');
+  const term = addTermCheck(grid);
+  // Один підрахунок на всі випадки: і після зміни курсу, і після зміни строку
+  // галочка перемальовується сама, а сторінка лишається на місці.
+  const syncTerm = () => {
+    const granted = [...(access[student.id] || [])];
+    const until = granted.map((id) => expiry[`${student.id}|${id}`]).find(Boolean) || null;
+    paintTerm(term, {
+      disabled: granted.length === 0,
+      checked: Boolean(until),
+      until,
+      from: granted.map((id) => grantedAt[`${student.id}|${id}`]).find(Boolean) || null,
+      row: termRow(granted),
+    });
+  };
   fillCourseChecks(grid, {
     isChecked: (course) => access[student.id]?.has(course.id) || false,
-    onToggle: (course, checkbox) => updateAccess(student.id, course.id, checkbox),
+    onToggle: async (course, checkbox) => {
+      await updateAccess(student.id, course.id, checkbox, termUntil(student.id));
+      syncTerm();
+    },
   });
-  const granted = [...(access[student.id] || [])];
-  const termBox = addTermCheck(grid, {
-    disabled: courseCount === 0,
-    until: granted.map((id) => expiry[`${student.id}|${id}`]).find(Boolean) || null,
-    from: granted.map((id) => grantedAt[`${student.id}|${id}`]).find(Boolean) || null,
-    row: termRow(granted),
-  });
-  termBox.addEventListener('change', () => updateTerm(student, termBox));
+  syncTerm();
+  term.input.addEventListener('change', () => updateTerm(student, term, syncTerm));
   card.querySelector('[data-delete]').addEventListener('click', () => deleteStudent(student, card));
   return card;
 }
@@ -215,17 +225,22 @@ function pendingCard(item) {
     <div class="admin-access-grid" aria-label="Доступ до курсів"></div>
   `;
   const grid = card.querySelector('.admin-access-grid');
-  fillCourseChecks(grid, {
-    isChecked: (course) => item.courses.has(course.id),
-    onToggle: (course, checkbox) => updatePendingAccess(item, course.id, checkbox),
-  });
+  const term = addTermCheck(grid);
   // Вона ще не заходила, тож дати початку немає: строк почнеться з першого входу.
-  const termBox = addTermCheck(grid, {
+  const syncTerm = () => paintTerm(term, {
     disabled: item.courses.size === 0,
-    pending: Boolean(pendingMonths[item.email]),
+    checked: Boolean(pendingMonths[item.email]),
     row: termRow([...item.courses]),
   });
-  termBox.addEventListener('change', () => updatePendingTerm(item, termBox));
+  fillCourseChecks(grid, {
+    isChecked: (course) => item.courses.has(course.id),
+    onToggle: async (course, checkbox) => {
+      await updatePendingAccess(item, course.id, checkbox);
+      syncTerm();
+    },
+  });
+  syncTerm();
+  term.input.addEventListener('change', () => updatePendingTerm(item, term, syncTerm));
   card.querySelector('[data-remove]').addEventListener('click', async () => {
     if (!confirm(`Прибрати ${item.email} зі списку очікування?`)) return;
     const { error } = await supabase.from('pending_students').delete().eq('email', item.email);
@@ -258,32 +273,39 @@ function termText({ checked, from, until }) {
   return `до ${formatDate(last)}`;
 }
 
-function addTermCheck(grid, { disabled, until = null, from = null, pending = false, row = null }) {
-  const checked = pending || Boolean(until);
+function addTermCheck(grid) {
   const label = document.createElement('label');
   label.className = 'student-term';
-  if (checked) label.classList.add('on');
-  if (until && new Date(until).getTime() <= Date.now()) label.classList.add('over');
-  label.style.gridRow = row ? String(row) : '1 / -1';
   const input = document.createElement('input');
   input.type = 'checkbox';
   input.setAttribute('data-term', '');
-  input.checked = checked;
-  input.disabled = disabled;
   const text = document.createElement('span');
-  text.textContent = termText({ checked, from, until });
   label.append(input, text);
   grid.appendChild(label);
-  return input;
+  return { label, input, text };
+}
+
+function paintTerm({ label, input, text }, { disabled, checked, until = null, from = null, row = null }) {
+  label.classList.toggle('on', checked);
+  label.style.gridRow = row ? String(row) : '1 / -1';
+  input.checked = checked;
+  input.disabled = disabled;
+  text.textContent = termText({ checked, from, until });
+}
+
+// Строк, який уже стоїть на курсах учениці: новий курс отримує той самий,
+// інакше в однієї людини зібрались би дві різні дати закриття.
+function termUntil(studentId) {
+  return [...(access[studentId] || [])].map((id) => expiry[`${studentId}|${id}`]).find(Boolean) || null;
 }
 
 // Строк рахуємо від дня, коли доступ ВИДАНО, а не від сьогодні: інакше
 // учениця, якій відкрили курс три тижні тому, отримала б зайвий місяць.
-async function updateTerm(student, checkbox) {
+async function updateTerm(student, term, syncTerm) {
   const courseIds = [...(access[student.id] || [])];
   if (!courseIds.length) return;
-  const wanted = checkbox.checked;
-  checkbox.disabled = true;
+  const wanted = term.input.checked;
+  term.input.disabled = true;
   const rows = courseIds.map((course_id) => {
     const from = grantedAt[`${student.id}|${course_id}`];
     return {
@@ -293,29 +315,37 @@ async function updateTerm(student, checkbox) {
     };
   });
   const { error } = await supabase.from('course_access').upsert(rows, { onConflict: 'student_id,course_id' });
-  checkbox.disabled = false;
+  term.input.disabled = false;
   if (error) {
-    checkbox.checked = !wanted;
+    term.input.checked = !wanted;
     showError('Не вдалося змінити строк доступу. Спробуйте ще раз.');
     return;
   }
   errorEl.hidden = true;
-  await load();
+  // Сторінку не перезавантажуємо: оновлюємо памʼять і перемальовуємо галочку.
+  rows.forEach((row) => {
+    const key = `${row.student_id}|${row.course_id}`;
+    if (row.expires_at) expiry[key] = row.expires_at;
+    else delete expiry[key];
+  });
+  syncTerm();
 }
 
-async function updatePendingTerm(item, checkbox) {
-  const wanted = checkbox.checked;
-  checkbox.disabled = true;
+async function updatePendingTerm(item, term, syncTerm) {
+  const wanted = term.input.checked;
+  term.input.disabled = true;
   const { error } = await supabase.from('pending_course_access')
     .update({ months: wanted ? 1 : null }).eq('email', item.email);
-  checkbox.disabled = false;
+  term.input.disabled = false;
   if (error) {
-    checkbox.checked = !wanted;
+    term.input.checked = !wanted;
     showError('Не вдалося змінити строк доступу. Спробуйте ще раз.');
     return;
   }
   errorEl.hidden = true;
-  await load();
+  if (wanted) pendingMonths[item.email] = 1;
+  else delete pendingMonths[item.email];
+  syncTerm();
 }
 
 function fillCourseChecks(container, { isChecked, onToggle }) {
@@ -396,11 +426,11 @@ async function updatePendingAccess(item, courseId, checkbox) {
   else item.courses.delete(courseId);
 }
 
-async function updateAccess(studentId, courseId, checkbox) {
+async function updateAccess(studentId, courseId, checkbox, inheritUntil = null) {
   const shouldGrant = checkbox.checked;
   checkbox.disabled = true;
   const request = shouldGrant
-    ? supabase.from('course_access').insert({ student_id: studentId, course_id: courseId })
+    ? supabase.from('course_access').insert({ student_id: studentId, course_id: courseId, expires_at: inheritUntil })
     : supabase.from('course_access').delete().eq('student_id', studentId).eq('course_id', courseId);
   const { error } = await request;
   checkbox.disabled = false;
@@ -411,8 +441,16 @@ async function updateAccess(studentId, courseId, checkbox) {
     return;
   }
   if (!access[studentId]) access[studentId] = new Set();
-  if (shouldGrant) access[studentId].add(courseId);
-  else access[studentId].delete(courseId);
+  const key = `${studentId}|${courseId}`;
+  if (shouldGrant) {
+    access[studentId].add(courseId);
+    grantedAt[key] = new Date().toISOString();
+    if (inheritUntil) expiry[key] = inheritUntil;
+  } else {
+    access[studentId].delete(courseId);
+    delete expiry[key];
+    delete grantedAt[key];
+  }
 }
 
 // Це не <form>, тому браузер сам нічого не перевіряє — формат пошти й
