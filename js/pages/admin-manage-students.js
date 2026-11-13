@@ -1,7 +1,7 @@
-import { supabase } from '../supabaseClient.js?v=20261112-2';
-import { requireAdmin, wireLogoutButton } from '../auth.js?v=20261112-2';
-import { FUNCTIONS_URL } from '../config.js?v=20261112-2';
-import { monthAccessExpiry } from '../access-term.js?v=20261112-2';
+import { supabase } from '../supabaseClient.js?v=20261112-3';
+import { requireAdmin, wireLogoutButton } from '../auth.js?v=20261112-3';
+import { FUNCTIONS_URL } from '../config.js?v=20261112-3';
+import { monthAccessExpiry, accessLastDay } from '../access-term.js?v=20261112-3';
 
 const auth = await requireAdmin();
 if (!auth) throw new Error('not admin');
@@ -24,6 +24,8 @@ let pendingStudents = [];
 let courses = [];
 let access = {};
 let expiry = {};
+let grantedAt = {};
+let pendingMonths = {};
 
 // invited_at зʼявляється лише після міграції 20260827_invited_at.sql. Поки її
 // не виконано, запитуємо без цього стовпця — сторінка не мусить падати через
@@ -55,7 +57,7 @@ async function load() {
   ] = await Promise.all([
     loadStudents(),
     supabase.from('courses').select('id, title').order('order_index'),
-    supabase.from('course_access').select('student_id, course_id, expires_at'),
+    supabase.from('course_access').select('student_id, course_id, expires_at, granted_at'),
     supabase.from('pending_students').select('email, created_at').order('created_at', { ascending: false }),
     supabase.from('pending_course_access').select('email, course_id, months'),
   ]);
@@ -69,10 +71,13 @@ async function load() {
   courses = courseRows || [];
   access = {};
   expiry = {};
+  grantedAt = {};
   (accessRows || []).forEach((row) => {
     if (!access[row.student_id]) access[row.student_id] = new Set();
     access[row.student_id].add(row.course_id);
-    if (row.expires_at) expiry[`${row.student_id}|${row.course_id}`] = row.expires_at;
+    const key = `${row.student_id}|${row.course_id}`;
+    if (row.expires_at) expiry[key] = row.expires_at;
+    if (row.granted_at) grantedAt[key] = row.granted_at;
   });
 
   // Учениця, яка ще жодного разу не заходила, живе в pending_students і не має
@@ -82,6 +87,10 @@ async function load() {
   (pendingAccessRows || []).forEach((row) => {
     if (!pendingAccess[row.email]) pendingAccess[row.email] = new Set();
     pendingAccess[row.email].add(row.course_id);
+  });
+  pendingMonths = {};
+  (pendingAccessRows || []).forEach((row) => {
+    if (row.months) pendingMonths[row.email] = row.months;
   });
   pendingStudents = (pendingRows || [])
     .filter((row) => !registeredEmails.has((row.email || '').toLowerCase()))
@@ -166,14 +175,20 @@ function studentCard(student) {
   const card = document.createElement('article');
   card.className = 'admin-student-card';
   const displayName = student.full_name || student.email;
+  const courseCount = access[student.id]?.size || 0;
   card.innerHTML = `
     <div class="admin-student-main">
       <span class="admin-avatar">${escapeHtml(initials(displayName))}</span>
-      <div><h2>${escapeHtml(displayName)}</h2><p>${student.full_name ? `${escapeHtml(student.email)} · ` : ''}${student.invited_at ? `додана ${formatDate(student.invited_at)}` : `перший вхід ${formatDate(student.created_at)}`}</p></div>
+      <h2>${escapeHtml(displayName)}</h2>
       <button type="button" class="admin-danger-link" data-delete>Видалити акаунт</button>
+      <p>${student.full_name ? `${escapeHtml(student.email)} · ` : ''}${student.invited_at ? `додана ${formatDate(student.invited_at)}` : `перший вхід ${formatDate(student.created_at)}`}</p>
+      ${termCheckHtml(courseCount === 0)}
     </div>
     <div class="admin-access-list" aria-label="Доступ до курсів"></div>
   `;
+  const termBox = card.querySelector('[data-term]');
+  termBox.checked = [...(access[student.id] || [])].some((courseId) => expiry[`${student.id}|${courseId}`]);
+  termBox.addEventListener('change', () => updateTerm(student, termBox));
   fillCourseChecks(card.querySelector('.admin-access-list'), {
     isChecked: (course) => access[student.id]?.has(course.id) || false,
     onToggle: (course, checkbox) => updateAccess(student.id, course.id, checkbox),
@@ -189,11 +204,16 @@ function pendingCard(item) {
   card.innerHTML = `
     <div class="admin-student-main">
       <span class="admin-avatar">${escapeHtml(initials(item.email))}</span>
-      <div><h2>${escapeHtml(item.email)}</h2><p>${formatDate(item.createdAt) ? `Додана ${formatDate(item.createdAt)} · ` : ''}ще не заходила</p></div>
+      <h2>${escapeHtml(item.email)}</h2>
       <button type="button" class="admin-danger-link" data-remove>Прибрати</button>
+      <p>${formatDate(item.createdAt) ? `Додана ${formatDate(item.createdAt)} · ` : ''}ще не заходила</p>
+      ${termCheckHtml(item.courses.size === 0)}
     </div>
     <div class="admin-access-list" aria-label="Доступ до курсів"></div>
   `;
+  const termBox = card.querySelector('[data-term]');
+  termBox.checked = Boolean(pendingMonths[item.email]);
+  termBox.addEventListener('change', () => updatePendingTerm(item, termBox));
   fillCourseChecks(card.querySelector('.admin-access-list'), {
     isChecked: (course) => item.courses.has(course.id),
     onToggle: (course, checkbox) => updatePendingAccess(item, course.id, checkbox),
@@ -210,6 +230,53 @@ function pendingCard(item) {
   return card;
 }
 
+// Галочка строку стоїть у тому ж рядку, що й дата додавання, і притиснута до
+// правого краю. Без жодного обраного курсу їй нема на що діяти, тому глушимо.
+function termCheckHtml(disabled) {
+  return `<label class="student-term"><input type="checkbox" data-term ${disabled ? 'disabled' : ''} /><span>доступ на 1 місяць</span></label>`;
+}
+
+// Строк рахуємо від дня, коли доступ ВИДАНО, а не від сьогодні: інакше
+// учениця, якій відкрили курс три тижні тому, отримала б зайвий місяць.
+async function updateTerm(student, checkbox) {
+  const courseIds = [...(access[student.id] || [])];
+  if (!courseIds.length) return;
+  const wanted = checkbox.checked;
+  checkbox.disabled = true;
+  const rows = courseIds.map((course_id) => {
+    const from = grantedAt[`${student.id}|${course_id}`];
+    return {
+      student_id: student.id,
+      course_id,
+      expires_at: wanted ? monthAccessExpiry(from ? new Date(from) : new Date()).toISOString() : null,
+    };
+  });
+  const { error } = await supabase.from('course_access').upsert(rows, { onConflict: 'student_id,course_id' });
+  checkbox.disabled = false;
+  if (error) {
+    checkbox.checked = !wanted;
+    showError('Не вдалося змінити строк доступу. Спробуйте ще раз.');
+    return;
+  }
+  errorEl.hidden = true;
+  await load();
+}
+
+async function updatePendingTerm(item, checkbox) {
+  const wanted = checkbox.checked;
+  checkbox.disabled = true;
+  const { error } = await supabase.from('pending_course_access')
+    .update({ months: wanted ? 1 : null }).eq('email', item.email);
+  checkbox.disabled = false;
+  if (error) {
+    checkbox.checked = !wanted;
+    showError('Не вдалося змінити строк доступу. Спробуйте ще раз.');
+    return;
+  }
+  errorEl.hidden = true;
+  await load();
+}
+
 function fillCourseChecks(container, { isChecked, onToggle, termOf }) {
   if (!courses.length) {
     container.innerHTML = '<span class="admin-count">Спочатку створіть курс.</span>';
@@ -223,7 +290,7 @@ function fillCourseChecks(container, { isChecked, onToggle, termOf }) {
     checkbox.checked = isChecked(course);
     const text = document.createElement('span');
     const until = termOf ? termOf(course) : null;
-    text.textContent = until ? `${course.title} · до ${formatDate(until)}` : course.title;
+    text.textContent = until ? `${course.title} · до ${formatDate(accessLastDay(until))}` : course.title;
     checkbox.addEventListener('change', () => onToggle(course, checkbox));
     label.append(checkbox, text);
     container.appendChild(label);
@@ -344,7 +411,7 @@ async function saveAccess() {
         .eq('id', existing.id).is('invited_at', null);
       statusEl.className = 'admin-alert success';
       statusEl.textContent = oneMonthEl.checked
-        ? `Доступ відкрито до ${formatDate(monthAccessExpiry())} включно ✓`
+        ? `Доступ відкрито до ${formatDate(accessLastDay(monthAccessExpiry()))} включно ✓`
         : 'Ця учениця вже має акаунт — доступ відкрито одразу ✓';
     } else {
       const { error: pendingError } = await supabase.from('pending_students').upsert({ email });

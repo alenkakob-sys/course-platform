@@ -1,10 +1,10 @@
-import { supabase } from '../supabaseClient.js?v=20261112-2';
-import { requireAuth } from '../auth.js?v=20261112-2';
-import { mountChatPanel } from '../components/chat-panel.js?v=20261112-2';
-import { mountHomeworkField } from '../components/homework-field.js?v=20261112-2';
-import { STUDENT_LESSON_SELECT, normalizeLesson } from '../models/lesson.js?v=20261112-2';
-import { getCourseAssetUrl, openCourseAsset } from '../course-assets.js?v=20261112-2';
-import { mountAccessNotice } from '../access-notice.js?v=20261112-2';
+import { supabase } from '../supabaseClient.js?v=20261112-3';
+import { requireAuth } from '../auth.js?v=20261112-3';
+import { mountChatPanel } from '../components/chat-panel.js?v=20261112-3';
+import { mountHomeworkField } from '../components/homework-field.js?v=20261112-3';
+import { STUDENT_LESSON_SELECT, normalizeLesson } from '../models/lesson.js?v=20261112-3';
+import { getCourseAssetUrl, openCourseAsset } from '../course-assets.js?v=20261112-3';
+import { mountAccessNotice } from '../access-notice.js?v=20261112-3';
 
 const urlParams = new URLSearchParams(window.location.search);
 const courseId = urlParams.get('course');

@@ -21,3 +21,11 @@ export function accessDaysLeft(expiresAt, now = new Date()) {
   const end = new Date(expiresAt);
   return Math.ceil((end.getTime() - now.getTime()) / 86400000) - 1;
 }
+
+// В expires_at лежить момент, коли доступу ВЖЕ немає. Людині треба показувати
+// останній день, коли курс ще працює, інакше дата читається на добу пізніше.
+export function accessLastDay(expiresAt) {
+  const day = new Date(expiresAt);
+  day.setDate(day.getDate() - 1);
+  return day;
+}

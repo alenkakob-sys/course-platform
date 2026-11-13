@@ -440,8 +440,21 @@ button.btn-dashed { border: 1px dashed var(--accent); color: var(--accent); back
 .admin-invite-panel #invite-status { margin: 12px 0 0; font-size: 13px; }
 .admin-students-list { display: grid; gap: 12px; }
 .admin-student-card { border: 0; border-radius: 12px; background: var(--admin-surface); padding: 16px 18px; }
-.admin-student-main { display: flex; gap: 13px; align-items: center; margin-bottom: 14px; }
-.admin-student-main > div { flex: 1; min-width: 0; }
+/* Два рядки: пошта і «Видалити акаунт» вгорі, дата й галочка строку внизу.
+   Сітка потрібна, щоб галочка стала рівно під кнопкою, по правому краю. */
+.admin-student-main {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
+  column-gap: 13px; row-gap: 3px; align-items: center; margin-bottom: 14px;
+}
+.admin-student-main .admin-avatar { grid-row: span 2; }
+.admin-student-main h2 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-student-main p { min-width: 0; }
+.student-term { justify-self: end; display: flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; }
+.student-term input { width: auto; margin: 0; accent-color: var(--admin-gold); cursor: pointer; }
+.student-term span { color: var(--admin-muted); font-size: 12.5px; }
+.student-term input:checked + span { color: var(--admin-gold); }
+.student-term input:disabled { opacity: .4; cursor: default; }
+.student-term input:disabled + span { opacity: .4; }
 /* Ще не заходила: помітно, але без тривоги. */
 .admin-student-card.pending { box-shadow: inset 3px 0 0 var(--admin-gold); }
 .admin-student-card.pending .admin-avatar { background: var(--admin-gold-soft); }

@@ -1,6 +1,6 @@
-import { supabase } from './supabaseClient.js?v=20261112-2';
-import { INSTAGRAM_HANDLE } from './config.js?v=20261112-2';
-import { accessDaysLeft } from './access-term.js?v=20261112-2';
+import { supabase } from './supabaseClient.js?v=20261112-3';
+import { INSTAGRAM_HANDLE } from './config.js?v=20261112-3';
+import { accessDaysLeft, accessLastDay } from './access-term.js?v=20261112-3';
 
 // Попередження про закінчення доступу. Показуємо за тиждень: раніше воно
 // просто набридає, пізніше вже немає часу щось зробити.
@@ -44,8 +44,7 @@ export async function mountAccessNotice(container, studentId, courseIds = null) 
     .sort((a, b) => a.left - b.left)[0];
   if (!soon) return;
 
-  const lastDay = new Date(soon.expires_at);
-  lastDay.setDate(lastDay.getDate() - 1);
+  const lastDay = accessLastDay(soon.expires_at);
 
   const box = document.createElement('div');
   box.className = 'access-notice';

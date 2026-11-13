@@ -15,4 +15,4 @@ export const FUNCTIONS_URL = 'https://course-platform-functions.netlify.app/.net
 // ⚠️ ВПИСАТИ НІК: сюди учениця пише, щоб подовжити доступ.
 // Порожнє значення — у попередженні буде просто «напишіть в Instagram»,
 // без посилання. Формат: 'alenka.brwi' (без @ і без адреси).
-export const INSTAGRAM_HANDLE = '';
+export const INSTAGRAM_HANDLE = 'alenka.brwi';
