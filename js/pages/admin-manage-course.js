@@ -195,9 +195,9 @@ function renderComparison() {
     card.dataset.lessonId = lesson.id;
     card.innerHTML = `
       <div class="admin-comparison-section">
-        <div class="admin-table-main-grid">
-          <input type="text" data-table-field="short_label" placeholder="Мітка" aria-label="Мітка" value="${escapeAttribute(lesson.short_label || '')}" />
-          <input type="text" data-table-field="title" placeholder="Назва уроку" aria-label="Назва уроку" value="${escapeAttribute(lesson.title)}" />
+        <div class="admin-table-title">
+          <input type="text" class="lesson-inline-label" data-table-field="short_label" placeholder="Мітка" aria-label="Мітка" value="${escapeAttribute(lesson.short_label || '')}" />
+          <input type="text" class="lesson-inline-title" data-table-field="title" placeholder="Назва уроку" aria-label="Назва уроку" value="${escapeAttribute(lesson.title)}" />
         </div>
         <select data-table-field="parent_lesson_id" aria-label="Структура"></select>
         <textarea data-table-field="description" rows="5" placeholder="Опис уроку" aria-label="Опис уроку">${escapeHtml(lesson.description || '')}</textarea>
@@ -213,15 +213,18 @@ function renderComparison() {
             <div class="admin-table-requirements">
               ${HOMEWORK_REQUIREMENTS.map(({ field, label }) => `<label><input data-require="${field}" type="checkbox" ${lesson[field] ? 'checked' : ''} ${lesson.homework_enabled ? '' : 'disabled'} /> ${label}</label>`).join('')}
             </div>
+            <select class="admin-table-access-select" data-table-field="next_lesson_access_rule" aria-label="Доступ до наступного уроку">${NEXT_LESSON_ACCESS_RULES.map(({ value, label }) => `<option value="${value}" ${lesson.next_lesson_access_rule === value ? 'selected' : ''}>${label}</option>`).join('')}</select>
           </div>
           <textarea data-table-field="homework_description" rows="5" placeholder="Завдання: опишіть, що потрібно виконати" ${lesson.homework_enabled ? '' : 'disabled'}>${escapeHtml(lesson.homework_description || '')}</textarea>
-        </div>
-        <div class="admin-table-subsection admin-table-access">
-          <select data-table-field="next_lesson_access_rule" aria-label="Доступ до наступного уроку">${NEXT_LESSON_ACCESS_RULES.map(({ value, label }) => `<option value="${value}" ${lesson.next_lesson_access_rule === value ? 'selected' : ''}>${label}</option>`).join('')}</select>
           ${renderTableAccessTiming(lesson)}
         </div>
       </div>
     `;
+
+    card.querySelectorAll('.admin-table-title .lesson-inline-label').forEach((input) => {
+      autoSizeInline(input);
+      input.addEventListener('input', () => autoSizeInline(input));
+    });
 
     const parentSelect = card.querySelector('[data-table-field="parent_lesson_id"]');
     parentSelect.innerHTML = '<option value="">Головний рівень</option>';
@@ -461,13 +464,16 @@ const labelRuler = document.createElement('span');
 labelRuler.style.cssText = 'position:absolute;visibility:hidden;white-space:pre;';
 document.body.appendChild(labelRuler);
 
-function autoSizeLabel() {
-  const input = elements.lessonShortLabel;
+function autoSizeInline(input) {
   const style = getComputedStyle(input);
   labelRuler.style.font = style.font;
   labelRuler.style.letterSpacing = style.letterSpacing;
   labelRuler.textContent = input.value || input.placeholder;
-  input.style.width = `${labelRuler.offsetWidth + 20}px`;
+  input.style.width = `${labelRuler.offsetWidth + 11}px`;
+}
+
+function autoSizeLabel() {
+  autoSizeInline(elements.lessonShortLabel);
 }
 
 function bindLessonText(element, field, { refreshTitles = false } = {}) {
